@@ -28,6 +28,9 @@ One grammar, used in spec dirs, trailers, tests, and the spine. Slugs are lowerc
 ## Conventions
 - Tests FIRST, always. Tests derived from EARS criteria follow the test-name rule above and are never modified after they are written.
 - Every commit on agent branches carries trailers: `Implements: FEAT-<slug>-R<n>` and `Agent-Session: <id>`.
+  `<id>` is the Agent SDK session id, exported by `dispatch/` as `$PDLC_AGENT_SESSION` and read by
+  `common/`. It is what joins a commit to its transcript and LangSmith trace, so never invent one:
+  if the variable is unset, stop and ask rather than guess.
 - Type hints everywhere; mypy strict is a gate, not a suggestion.
 - No new dependencies without asking me first.
 - Branches: `agent/*` for agent work, `feat/*` for human work, `chore/*` for tooling and scaffolding.
