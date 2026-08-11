@@ -35,7 +35,11 @@ One grammar, used in spec dirs, trailers, tests, and the spine. Slugs are lowerc
 - Never commit to or push `main`. If you are on `main`, create a branch before your first edit.
 
 ## Do not touch
-- `scripts/hooks/**`, `evals/**/`, `.github/**`, `specs/**/requirements.md` after approval
+- `scripts/hooks/**`, `evals/**` (the top-level dir, NOT `src/pdlc/evals/`), and
+  `specs/**/requirements.md` once approved. Read them freely; never modify them.
+- `.github/**` is human-owned. You may draft or edit a workflow only when I ask you to in the
+  current conversation, and only on a branch — never merge it, never self-approve, never edit
+  it as a side effect of some other task.
 - hook-enforced from Day2, but do not attempt even before then.
 - Never read or write `.env`, `*.pem`, `~/.secrets/`, `SAVE/` (repo root — holds live credentials).
 
