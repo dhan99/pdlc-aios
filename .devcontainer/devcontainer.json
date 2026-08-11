@@ -1,0 +1,34 @@
+{
+  "name": "pdlc-aios",
+  "image": "mcr.microsoft.com/devcontainers/python:3.14",
+
+  // ---------------------------------------------------------------------
+  // Sandbox boundary — V2-r2 sandbox tier 1 (developer-attended sessions).
+  //
+  // Nothing from the host home directory is mounted into this container:
+  // no ~/.ssh, no ~/.secrets, no Docker socket. An agent running here can
+  // reach the repo and whatever the env vars below grant, and nothing more.
+  // A mounted socket or key directory would let it act as you on the host,
+  // which is exactly the blast radius this tier exists to bound.
+  //
+  // Do not add "mounts", and do not add a docker-in-docker or
+  // docker-outside-of-docker feature, without moving to a higher tier and
+  // saying so here.
+  // ---------------------------------------------------------------------
+
+  "features": {
+    "ghcr.io/va-h/devcontainers-features/uv:1": {},
+    "ghcr.io/devcontainers/features/github-cli:1": {}
+  },
+
+  "postCreateCommand": "uv sync && uv run pre-commit install",
+
+  // Forwarded from the host environment at create time. Unset vars arrive
+  // as empty strings; nothing is read from a file on the host.
+  "containerEnv": {
+    "ANTHROPIC_API_KEY": "${localEnv:ANTHROPIC_API_KEY}",
+    "LANGSMITH_API_KEY": "${localEnv:LANGSMITH_API_KEY}",
+    "LANGSMITH_TRACING": "${localEnv:LANGSMITH_TRACING}",
+    "LANGSMITH_PROJECT": "${localEnv:LANGSMITH_PROJECT}"
+  }
+}
