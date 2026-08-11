@@ -26,7 +26,12 @@ One grammar, used in spec dirs, trailers, tests, and the spine. Slugs are lowerc
   `FEAT-ears-validator-R3` -> `test_feat_ears_validator_r3_rejects_bare_shall`
 
 ## Conventions
-- Tests FIRST, always. Tests derived from EARS criteria follow the test-name rule above and are never modified after they are written.
+- Tests FIRST, always. Tests derived from EARS criteria follow the test-name rule above.
+  Their assertions are frozen; their mechanics are not. You may move an import, rename a fixture,
+  extract a helper, reformat. You may not change, weaken, skip, xfail, or delete an assertion.
+  To change what a test asserts, amend the EARS criterion in `requirements.md` first, then update
+  the test in the same commit — the requirement moves and the test follows, never the reverse.
+  Non-EARS tests (unit, helper) are yours to refactor freely.
 - Every commit on agent branches carries trailers: `Implements: FEAT-<slug>-R<n>` and `Agent-Session: <id>`.
   `<id>` is the Agent SDK session id, exported by `dispatch/` as `$PDLC_AGENT_SESSION` and read by
   `common/`. It is what joins a commit to its transcript and LangSmith trace, so never invent one:
