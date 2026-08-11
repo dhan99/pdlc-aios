@@ -13,10 +13,12 @@ Architecture source of truth: v2 technical brief r2 (PDLC-DEV/v2-technical-brief
 - `src/pdlc/ears/`      - EARS requirement validation (5 patterns, regex-based, deterministic)
 - `src/pdlc/spine/`     - Postgres traceability (req↔design↔task↔PR↔test)
 - `src/pdlc/dispatch/`  - one bounded Agent SDK session per task
-- `src/pdlc/evals/`     - dataset runner; report-only until seeded (r2 rule)
+- `src/pdlc/evals/`     - dataset runner. See "Evals" below.
 - `src/pdlc/common/`    - trailers, ids, config. No business logic here.
 - `specs/FEAT-*/`       - requirements.md (EARS), design.md, tasks.md per feature
 - `scripts/hooks/`      - policy hooks. These are LAW, reviewed like code.
+- `evals/datasets/`     - golden data (not code). Protected; see "Do not touch".
+- `metrics/`            - baseline.json, cost model. Append-only; never rewrite history.
 
 ## IDs
 One grammar, used in spec dirs, trailers, tests, and the spine. Slugs are lowercase kebab-case.
@@ -41,6 +43,17 @@ One grammar, used in spec dirs, trailers, tests, and the spine. Slugs are lowerc
 - Branches: `agent/*` for agent work, `feat/*` for human work, `chore/*` for tooling and scaffolding.
 - Trailers above are required on `agent/*` only; `chore/*` predates any FEAT and carries none.
 - Never commit to or push `main`. If you are on `main`, create a branch before your first edit.
+
+## Evals
+- Seeded = at least 20 goldens in `evals/datasets/`. Below that, a pass rate is noise: one bad
+  case moves it 5 points.
+- Until seeded, evals are report-only. Run them, write the score to `metrics/`, and never let a
+  result block a commit or a merge.
+- Once seeded, a run is gated on regression against `metrics/baseline.json`:
+  score below baseline blocks; score at or above it passes and rewrites the baseline;
+  no baseline file yet means record it and do not block.
+- Never edit `metrics/baseline.json` by hand to get to green. If a drop is a deliberate
+  trade-off, say so and I will move the baseline.
 
 ## Do not touch
 - `scripts/hooks/**`, `evals/**` (the top-level dir, NOT `src/pdlc/evals/`), and
