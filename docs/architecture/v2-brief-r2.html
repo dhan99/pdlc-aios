@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>V2 Technical Brief — AI-Assisted PDLC on Claude · LangGraph · LangSmith</title>
+<style>
+  :root{
+    --navy:#0E1B2C; --ink:#1c2b3a; --orange:#E65B24; --paper:#FAF8F5;
+    --line:#e3ddd4; --muted:#6b7788; --card:#ffffff; --soft:#f2eee8;
+    --code-bg:#101826; --code-fg:#d8e1ee; --green:#1d7a4f; --red:#b3341f; --blue:#26415e;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{font-family:"Segoe UI",-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif; background:var(--paper); color:var(--ink); line-height:1.55; padding-bottom:60px;}
+  .wrap{max-width:1060px; margin:0 auto; padding:0 28px;}
+  header{background:var(--navy); color:#fff; padding:42px 0 36px; margin-bottom:30px; border-bottom:4px solid var(--orange);}
+  header h1{font-size:1.6rem; font-weight:700;}
+  header p{color:#b9c4d2; margin-top:8px; font-size:.95rem; max-width:860px;}
+  .tag{display:inline-block; background:var(--orange); color:#fff; font-size:.7rem; font-weight:700; letter-spacing:1.2px; padding:4px 10px; border-radius:3px; margin-bottom:14px; text-transform:uppercase;}
+  nav{background:var(--card); border:1px solid var(--line); border-radius:8px; padding:14px 20px; font-size:.83rem; margin-bottom:8px;}
+  nav a{color:var(--navy); text-decoration:none; margin-right:14px; font-weight:600; white-space:nowrap;}
+  nav a:hover{color:var(--orange);}
+  h2{font-size:1.16rem; margin:38px 0 14px; color:var(--navy); border-left:4px solid var(--orange); padding-left:10px;}
+  h3{font-size:.98rem; margin:22px 0 8px; color:var(--navy);}
+  h4{font-size:.88rem; margin:14px 0 6px; color:var(--blue);}
+  p{font-size:.91rem; margin-bottom:10px;}
+  ul,ol{margin:6px 0 12px 22px; font-size:.89rem;}
+  li{margin-bottom:5px;}
+  table{width:100%; border-collapse:collapse; background:var(--card); border:1px solid var(--line); font-size:.83rem; margin:12px 0 18px;}
+  th{background:var(--navy); color:#fff; text-align:left; padding:9px 12px; font-size:.74rem; letter-spacing:.6px; text-transform:uppercase;}
+  td{padding:9px 12px; border-top:1px solid var(--line); vertical-align:top;}
+  tr:nth-child(even) td{background:var(--soft);}
+  pre{background:var(--code-bg); color:var(--code-fg); border-radius:8px; padding:15px 17px; font-size:.78rem; overflow-x:auto; margin:10px 0 16px; line-height:1.5;}
+  code{font-family:"SF Mono",Consolas,Menlo,monospace;}
+  p code, li code, td code{background:var(--soft); color:var(--navy); padding:1px 5px; border-radius:3px; font-size:.82em; border:1px solid var(--line);}
+  .callout{background:var(--card); border:1px solid var(--line); border-left:4px solid var(--orange); border-radius:6px; padding:14px 18px; margin:14px 0; font-size:.88rem;}
+  .callout strong{color:var(--navy);}
+  .invariant{background:#fdf3ef; border-left:4px solid var(--red);}
+  .diagram{background:var(--code-bg); color:#9fd3b4; border-radius:8px; padding:16px 18px; font-size:.74rem; overflow-x:auto; margin:10px 0 16px; line-height:1.45; font-family:"SF Mono",Consolas,Menlo,monospace; white-space:pre;}
+  .lbadge{display:inline-block; font-size:.66rem; font-weight:700; letter-spacing:.8px; text-transform:uppercase; padding:2px 7px; border-radius:3px; margin-right:6px;}
+  .l1{background:#e8f1ea; color:#1d5c38;} .l2{background:#e8eef6; color:#26415e;}
+  .l3{background:#fdeae1; color:#a63d12;} .l4{background:#f3e8f2; color:#6d2a63;} .l5{background:#efefe6; color:#5d5a2a;}
+  footer{margin-top:46px; color:var(--muted); font-size:.78rem; border-top:1px solid var(--line); padding-top:14px;}
+  .svgbox{background:var(--card); border:1px solid var(--line); border-radius:8px; padding:14px; margin:12px 0 18px; overflow-x:auto;}
+  .agrid{display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin:12px 0 18px;}
+  .agroup h4{font-size:.72rem; text-transform:uppercase; letter-spacing:.9px; color:var(--muted); margin-bottom:8px; border-bottom:2px solid var(--line); padding-bottom:4px;}
+  .acard{background:var(--card); border:1px solid var(--line); border-top:3px solid var(--orange); border-radius:6px; padding:10px 12px; margin-bottom:10px;}
+  .acard h5{font-size:.8rem; color:var(--navy); margin-bottom:5px;}
+  .acard .rb{display:inline-block; font-size:.6rem; font-weight:700; letter-spacing:.5px; text-transform:uppercase; padding:1px 6px; border-radius:3px; margin:0 4px 6px 0;}
+  .rb-lg{background:#fdeae1; color:#a63d12;} .rb-cc{background:#e8eef6; color:#26415e;}
+  .rb-ci{background:#e8f1ea; color:#1d5c38;} .rb-ls{background:#f3e8f2; color:#6d2a63;}
+  .acard p{font-size:.72rem; margin-bottom:3px; color:var(--ink);}
+  .acard p b{color:var(--navy);}
+  @media(max-width:860px){.agrid{grid-template-columns:repeat(2,1fr);}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <span class="tag">Technical Brief · v2 Implementation</span>
+    <h1>AI-Assisted PDLC as ALTi AIOS™ Engineering — Implementation on Claude · LangGraph · LangSmith</h1>
+    <p>Full technical implementation of the V2 architecture: the RDR pipeline, inner loop, outer loop, and governance/substrate builds, realized on the Claude ecosystem (Claude models, Claude Code, Claude Agent SDK, MCP), LangGraph as the orchestration plane, LangSmith as the eval/observability plane, plus the supporting stack for every remaining V2 requirement. Scoped to the AIOS disciplines this workload actually engages. Aug 2026 · <strong>Revision r2</strong> — post critical review: phase-gated stack, Postgres-first spine, cross-family verification, eval cold-start, risk-tiered gates, published cost model.</p>
+  </div>
+</header>
+
+<div class="wrap">
+
+<nav>
+  <a href="#stack">1 · Stack &amp; disciplines</a>
+  <a href="#arch">2 · System architecture</a>
+  <a href="#process">2A · Process flow</a>
+  <a href="#agents">2B · Agent catalog</a>
+  <a href="#minfoot">2C · Minimal AIOS footprint</a>
+  <a href="#split">3 · Runtime split</a>
+  <a href="#rdr">4 · RDR pipeline (LangGraph)</a>
+  <a href="#inner">5 · Inner loop (Claude Code)</a>
+  <a href="#outer">6 · Outer loop</a>
+  <a href="#trace">7 · Traceability spine</a>
+  <a href="#evals">8 · Evals (LangSmith)</a>
+  <a href="#obs">9 · Observability</a>
+  <a href="#gov">10 · Governance &amp; security</a>
+  <a href="#infra">11 · Infra &amp; cost</a>
+  <a href="#roadmap">12 · ADAF roadmap</a>
+</nav>
+
+<div class="callout"><strong>r2 revision log (critical review, Aug 2026).</strong> Eight changes folded in: (1) the stack is now <strong>phase-entry-gated</strong> — Gates 0–2 run on Claude Code + Actions + LangSmith + Postgres alone; LangGraph enters at Gate 3, Temporal only on demonstrated need; (2) the traceability spine is <strong>Postgres-first</strong>, promoted to Neo4j only if traversal queries demand it, and degrades to warn-and-queue (24h grace) instead of hard fail-closed; (3) critics and the LLM judge are <strong>cross-family</strong> via LiteLLM — same-family generator/grader pairs share blind spots; (4) evals run <strong>report-only until seeded</strong> (~50+ labeled examples per dataset) before they gate; (5) uniform gates replaced by <strong>risk-tiered gating</strong> with SLAs; (6) a <strong>per-feature cost model</strong> is published at Gate 1 and gates Gate-2 entry; (7) <strong>EARS scoped to functional ACs</strong> — NFRs become fitness functions, the rest carries an explicit not-machine-checkable flag; (8) human baseline capture, SDK pinning, MCP supply-chain attestation, and a Gate-3 de-scope fallback added to the roadmap.</div>
+
+<h2 id="stack">1 · Stack decision &amp; discipline scope</h2>
+<p>V2 activates a subset of the 45 AIOS disciplines (the "activation priority" list plus their supports). Each in-scope discipline gets exactly one owning technology. Out of scope for this workload: Fine-Tuning &amp; PEFT, Edge &amp; On-Device AI, Multimodal Interface Eng, Synthetic Data Eng (except optional eval-corpus augmentation), Semantic Layer/NL2SQL, Salesforce horizontal.</p>
+<p><strong>Phase-entry gating (r2):</strong> owning a discipline does not mean deploying its technology on day one. The V1 anti-pattern list includes framework-first architecture — so the stack enters in waves: <strong>Gates 0–2</strong> = Claude Code + GitHub Actions + LangSmith + Postgres only; <strong>Gate 3</strong> adds LangGraph (durable RDR gates are its first real requirement) and the spine CI check; <strong>Temporal, Neo4j, and dedicated microVM fleets</strong> enter only when a measured need appears (multi-week workflows, traversal-heavy queries, sandbox scale).</p>
+
+<table>
+  <tr><th>AIOS discipline (layer)</th><th>Owning technology</th><th>Role in V2</th></tr>
+  <tr><td><span class="lbadge l5">L5</span>Harness Engineering</td><td><strong>Claude Code + Claude Agent SDK</strong></td><td>The coding-agent runtime: plan mode, subagents, hooks, skills, headless CI</td></tr>
+  <tr><td><span class="lbadge l5">L5</span>AI-Infused PDLC / ADLC Eng.</td><td>Claude Code + spec-kit conventions</td><td>The owning discipline — spec→plan→tasks→code workflow in-repo</td></tr>
+  <tr><td><span class="lbadge l3">L3</span>Workflow Orchestration</td><td><strong>LangGraph 1.x</strong> (Python)</td><td>RDR pipeline + ops workflows as durable StateGraphs with checkpointing</td></tr>
+  <tr><td><span class="lbadge l3">L3</span>Human-in-the-Loop Eng.</td><td>LangGraph <code>interrupt()</code> + Agent Inbox UI</td><td>PM/architect gates as first-class pause/resume states</td></tr>
+  <tr><td><span class="lbadge l3">L3</span>Multi-Agent Architecture</td><td>LangGraph graph topology</td><td>Orchestrator + parallel critic fan-out; no free-form swarms</td></tr>
+  <tr><td><span class="lbadge l3">L3</span>Failure &amp; Recovery Eng.</td><td>LangGraph Postgres checkpointer (+ Temporal for multi-day, §11)</td><td>Resume-from-checkpoint; compensation for long workflows</td></tr>
+  <tr><td><span class="lbadge l3">L3</span>Tool &amp; MCP Engineering</td><td><strong>MCP servers</strong> (Jira, GitHub, graph-DB, spec-store)</td><td>Uniform tool contract for both runtimes</td></tr>
+  <tr><td><span class="lbadge l3">L3</span>Model Routing &amp; Selection</td><td>Per-node model pinning + <strong>LiteLLM gateway</strong></td><td>Tiered models per role; budgets; provider portability (Anthropic API / Bedrock / Vertex)</td></tr>
+  <tr><td><span class="lbadge l3">L3</span>Agent Runtime Engineering</td><td><strong>E2B / Firecracker microVMs</strong>; devcontainers; ephemeral CI runners</td><td>Sandboxed execution, egress allowlists</td></tr>
+  <tr><td><span class="lbadge l4">L4</span>Eval Engineering</td><td><strong>LangSmith</strong> (datasets, evaluators, annotation queues) + pytest gate</td><td>Golden sets, cross-family LLM-judge rubrics; report-only until seeded, then CI regression blocking (r2)</td></tr>
+  <tr><td><span class="lbadge l4">L4</span>AI Observability Eng.</td><td><strong>LangSmith tracing</strong> + OTel GenAI (Claude Code exporter → OTLP)</td><td>One trace plane across both runtimes</td></tr>
+  <tr><td><span class="lbadge l4">L4</span>Policy-as-Code Eng.</td><td>Claude Code hooks + <strong>OPA/Rego</strong> in CI + GitHub rulesets</td><td>Deterministic gates: path protection, egress, merge invariants</td></tr>
+  <tr><td><span class="lbadge l4">L4</span>Agent Identity &amp; Access</td><td>GitHub Apps (one per agent) + scoped tokens + cloud IAM</td><td>Attributable identity; agent excluded from approver sets</td></tr>
+  <tr><td><span class="lbadge l4">L4</span>AI Audit &amp; Explainability</td><td>Trace store (LangSmith) + traceability graph (§7) + commit trailers</td><td>Every merge traces to an approved requirement</td></tr>
+  <tr><td><span class="lbadge l4">L4</span>Red-Teaming &amp; Adversarial</td><td>promptfoo red-team suites + injection test corpus in CI</td><td>Prompt-injection defense for CI runners &amp; MCP inputs</td></tr>
+  <tr><td><span class="lbadge l2">L2</span>Context Engineering</td><td>Spec store (<code>specs/</code> in git) + CLAUDE.md hierarchy + PromptSpec-style normalization</td><td>The handoff contract: EARS requirements, curated design slices</td></tr>
+  <tr><td><span class="lbadge l2">L2</span>Knowledge Graph Eng.</td><td><strong>Postgres spine schema</strong> (r2; promote to Neo4j only if traversal queries demand it)</td><td>Traceability spine: Requirement↔Design↔Task↔PR↔Test — same DB as checkpoints, one less system</td></tr>
+  <tr><td><span class="lbadge l2">L2</span>Retrieval Engineering</td><td><strong>pgvector</strong> (Postgres) — same DB as checkpoints</td><td>Historical-item retrieval for estimation; ADR/spec search</td></tr>
+  <tr><td><span class="lbadge l2">L2</span>Memory Architecture Eng.</td><td>LangGraph Store API (Postgres-backed)</td><td>Cross-session org memory: reviewer corrections, decisions, conventions</td></tr>
+  <tr><td><span class="lbadge l1">L1</span>Human-Agent Collaboration</td><td>Agent Inbox (LangGraph HITL UI) + GitHub PR surface + Slack notifications</td><td>Where gates get approved fast</td></tr>
+  <tr><td><span class="lbadge l1">L1</span>Agent Transparency Design</td><td>Trace-link on every artifact/PR (LangSmith run URL)</td><td>Reviewer sees plan, evidence, and trajectory at the gate</td></tr>
+  <tr><td><span class="lbadge l1">L1</span>Feedback Loop Engineering</td><td>LangSmith annotation queues → datasets</td><td>Reviewer corrections become eval cases automatically</td></tr>
+</table>
+
+<h2 id="arch">2 · System architecture</h2>
+<div class="diagram">┌────────────────────────── L1 · EXPERIENCES ──────────────────────────────┐
+│  Jira/Confluence      GitHub PRs        Agent Inbox (gates)     Slack    │
+└──────▲───────────────────▲───────────────────▲──────────────────▲───────┘
+       │ MCP               │ webhooks/Actions  │ interrupt/resume │ notify
+┌──────┴───────────────────┴───────────────────┴──────────────────┴───────┐
+│                    L3 · ORCHESTRATION PLANE — LangGraph                  │
+│                                                                          │
+│  RDR Graph:  clarify → [PM GATE] → formalize → design ─┬→ threat-critic  │
+│              plan-tasks ← [ARCHITECT GATE] ← join ←────┴→ consist-critic │
+│                                                                          │
+│  Ops Graphs: incident-investigate (propose-only) · traceability-steward  │
+│  Dispatch:   task → Claude Code session (inner loop)  [Agent SDK call]   │
+└──────┬──────────────────────────┬───────────────────────────┬────────────┘
+       │                          │                           │
+┌──────▼─────────┐   ┌───────────▼────────────┐   ┌──────────▼───────────┐
+│ L5 · CODING     │   │ L2 · CONTEXT           │   │ L4 · GOVERNANCE       │
+│ Claude Code /   │   │ specs/ (git, EARS)     │   │ LangSmith evals+trace │
+│ Agent SDK in    │   │ Postgres trace spine   │   │ OPA gates · hooks     │
+│ E2B/CI sandbox  │   │ pgvector · Store       │   │ GitHub rulesets       │
+└─────────────────┘   └────────────────────────┘   └───────────────────────┘
+       Models: Claude via Anthropic API / Bedrock / Vertex · LiteLLM gateway
+       Durability: Postgres (checkpoints+vectors+store) · Temporal (multi-day)</div>
+
+<h2 id="process">2A · End-to-end process flow</h2>
+<p>The complete flow from intake brief to operated production change: twelve agents, four platform-enforced human gates (G1–G4), EARS as the requirements interlingua, the LangSmith flywheel, the Postgres traceability spine, and ADAF phase gates governing the rollout itself. Long dashed orange lines are human-gate interventions; solid lines are automated flow.</p>
+<div class="svgbox">
+<svg viewBox="0 0 1040 660" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI, Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="arr" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto"><polygon points="0 0, 9 3.5, 0 7" fill="#1c2b3a"/></marker>
+    <marker id="arrO" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto"><polygon points="0 0, 9 3.5, 0 7" fill="#E65B24"/></marker>
+  </defs>
+
+  <!-- lanes -->
+  <rect x="0" y="30"  width="1040" height="100" fill="#fdf3ef" stroke="#e3ddd4"/>
+  <rect x="0" y="136" width="1040" height="150" fill="#ffffff" stroke="#e3ddd4"/>
+  <rect x="0" y="292" width="1040" height="124" fill="#f6f3ec" stroke="#e3ddd4"/>
+  <rect x="0" y="422" width="1040" height="148" fill="#ffffff" stroke="#e3ddd4"/>
+  <rect x="0" y="576" width="1040" height="76"  fill="#0E1B2C"/>
+  <text x="12" y="46"  font-size="9" letter-spacing="1.5" fill="#a63d12" font-weight="700">HUMAN GATES · L1 EXPERIENCES (AGENT INBOX · GITHUB · JIRA/SLACK)</text>
+  <text x="12" y="152" font-size="9" letter-spacing="1.5" fill="#6b7788" font-weight="700">RDR PLANE · LANGGRAPH STATEGRAPH (L2 CONTEXT + L3 AGENTIC)</text>
+  <text x="12" y="308" font-size="9" letter-spacing="1.5" fill="#6b7788" font-weight="700">INNER LOOP · CLAUDE CODE / AGENT SDK IN SANDBOX (L5 SUBSTRATE)</text>
+  <text x="12" y="438" font-size="9" letter-spacing="1.5" fill="#6b7788" font-weight="700">OUTER LOOP · CI/CD &amp; OPS (L4 GOVERNANCE + L5)</text>
+
+  <!-- long dashed gate connectors (drawn first; pass behind boxes) -->
+  <g stroke="#E65B24" stroke-width="1.3" stroke-dasharray="5 4" fill="none">
+    <line x1="262" y1="104" x2="262" y2="188"/>
+    <line x1="600" y1="104" x2="600" y2="188"/>
+    <line x1="760" y1="104" x2="760" y2="446"/>
+    <polyline points="940,104 940,425 992,425 992,530 946,530"/>
+  </g>
+  <!-- flywheel feedback up -->
+  <line x1="150" y1="506" x2="150" y2="290" stroke="#6d2a63" stroke-width="1.2" stroke-dasharray="4 3"/>
+  <polygon points="146,292 150,283 154,292" fill="#6d2a63"/>
+  <text x="158" y="300" font-size="8" fill="#6d2a63">eval-gates every prompt / graph / model change</text>
+
+  <!-- traceability spine stubs -->
+  <g stroke="#6b7788" stroke-width="1" stroke-dasharray="3 3">
+    <line x1="950" y1="216" x2="1002" y2="216"/>
+    <line x1="796" y1="350" x2="1002" y2="350"/>
+    <line x1="950" y1="473" x2="1002" y2="473"/>
+  </g>
+
+  <!-- flow arrows -->
+  <g stroke="#1c2b3a" stroke-width="1.4" fill="none" marker-end="url(#arr)">
+    <line x1="106" y1="195" x2="124" y2="195"/>
+    <line x1="238" y1="193" x2="284" y2="193"/>
+    <line x1="410" y1="193" x2="450" y2="193"/>
+    <line x1="564" y1="193" x2="674" y2="193"/>
+    <line x1="480" y1="218" x2="480" y2="230"/>
+    <line x1="536" y1="218" x2="594" y2="230"/>
+    <line x1="776" y1="193" x2="788" y2="193"/>
+    <polyline points="870,272 870,306 123,306 123,326"/>
+    <line x1="198" y1="350" x2="250" y2="350"/>
+    <line x1="402" y1="338" x2="468" y2="338"/>
+    <line x1="606" y1="350" x2="662" y2="350"/>
+    <polyline points="730,372 730,405 570,405 570,444"/>
+    <line x1="660" y1="473" x2="708" y2="473"/>
+    <line x1="810" y1="473" x2="838" y2="473"/>
+    <line x1="895" y1="496" x2="895" y2="504"/>
+    <line x1="740" y1="530" x2="610" y2="530"/>
+    <line x1="570" y1="496" x2="570" y2="504"/>
+  </g>
+  <line x1="470" y1="364" x2="404" y2="364" stroke="#1c2b3a" stroke-width="1.4" marker-end="url(#arr)"/>
+  <text x="436" y="316" font-size="8" fill="#6b7788" text-anchor="middle">3–5 rounds</text>
+  <text x="500" y="300" font-size="8" fill="#6b7788">tasks.md → one bounded session per task</text>
+  <text x="748" y="524" font-size="8" fill="#6b7788" text-anchor="end">prod signals</text>
+  <text x="540" y="280" font-size="8" fill="#6b7788">critic findings surface at G2</text>
+
+  <!-- RDR plane boxes -->
+  <rect x="30" y="178" width="76" height="34" rx="17" fill="#e8eef6" stroke="#26415e"/>
+  <text x="68" y="198" font-size="9" fill="#26415e" text-anchor="middle" font-weight="600">Brief / epic</text>
+
+  <g>
+    <rect x="126" y="168" width="112" height="50" rx="6" fill="#fff" stroke="#0E1B2C" stroke-width="1.4"/>
+    <text x="182" y="188" font-size="10" fill="#0E1B2C" text-anchor="middle" font-weight="700">1 · Elicitation</text>
+    <text x="182" y="202" font-size="8.5" fill="#6b7788" text-anchor="middle">clarify · never invents</text>
+
+    <rect x="286" y="168" width="124" height="50" rx="6" fill="#fff" stroke="#0E1B2C" stroke-width="1.4"/>
+    <text x="348" y="184" font-size="10" fill="#0E1B2C" text-anchor="middle" font-weight="700">2 · Formalizer</text>
+    <text x="348" y="197" font-size="8.5" fill="#6b7788" text-anchor="middle">stories → acceptance criteria</text>
+    <rect x="318" y="203" width="60" height="13" rx="3" fill="#E65B24"/>
+    <text x="348" y="213" font-size="8.5" fill="#fff" text-anchor="middle" font-weight="700">EARS + IDs</text>
+
+    <rect x="452" y="168" width="112" height="50" rx="6" fill="#fff" stroke="#0E1B2C" stroke-width="1.4"/>
+    <text x="508" y="188" font-size="10" fill="#0E1B2C" text-anchor="middle" font-weight="700">3 · Design Agent</text>
+    <text x="508" y="202" font-size="8.5" fill="#6b7788" text-anchor="middle">design.md · terse ADRs</text>
+
+    <rect x="430" y="232" width="100" height="34" rx="5" fill="#f2eee8" stroke="#0E1B2C"/>
+    <text x="480" y="246" font-size="8.5" fill="#0E1B2C" text-anchor="middle" font-weight="700">3a · Threat critic</text>
+    <text x="480" y="257" font-size="7.5" fill="#6b7788" text-anchor="middle">STRIDE · read-only</text>
+
+    <rect x="542" y="232" width="112" height="34" rx="5" fill="#f2eee8" stroke="#0E1B2C"/>
+    <text x="598" y="246" font-size="8.5" fill="#0E1B2C" text-anchor="middle" font-weight="700">3b · Consistency critic</text>
+    <text x="598" y="257" font-size="7.5" fill="#6b7788" text-anchor="middle">req ↔ design coverage</text>
+
+    <rect x="676" y="168" width="100" height="50" rx="6" fill="#fff" stroke="#0E1B2C" stroke-width="1.4"/>
+    <text x="726" y="188" font-size="10" fill="#0E1B2C" text-anchor="middle" font-weight="700">4 · Planner</text>
+    <text x="726" y="202" font-size="8.5" fill="#6b7788" text-anchor="middle">atomic tasks · req links</text>
+  </g>
+
+  <!-- artifacts -->
+  <rect x="790" y="160" width="160" height="112" rx="6" fill="#fffdf9" stroke="#E65B24" stroke-width="1.4"/>
+  <text x="870" y="178" font-size="9.5" fill="#a63d12" text-anchor="middle" font-weight="700">specs/FEAT-x/ (git)</text>
+  <text x="800" y="196" font-size="8.5" fill="#1c2b3a">requirements.md — EARS, IDs</text>
+  <text x="800" y="212" font-size="8.5" fill="#1c2b3a">design.md + ADRs</text>
+  <text x="800" y="228" font-size="8.5" fill="#1c2b3a">tasks.md — req back-links</text>
+  <text x="800" y="250" font-size="7.5" fill="#6b7788">registered in trace spine →</text>
+  <text x="800" y="262" font-size="7.5" fill="#6b7788">delta path skips full ceremony</text>
+
+  <!-- inner loop -->
+  <rect x="48" y="328" width="150" height="44" rx="17" fill="#e8eef6" stroke="#26415e"/>
+  <text x="123" y="346" font-size="8.5" fill="#26415e" text-anchor="middle" font-weight="600">Per-task dispatch</text>
+  <text x="123" y="358" font-size="7.5" fill="#26415e" text-anchor="middle">Agent SDK · E2B microVM</text>
+
+  <rect x="252" y="322" width="150" height="56" rx="6" fill="#fff" stroke="#0E1B2C" stroke-width="1.4"/>
+  <text x="327" y="341" font-size="10" fill="#0E1B2C" text-anchor="middle" font-weight="700">5 · Coding Agent</text>
+  <text x="327" y="355" font-size="8.5" fill="#6b7788" text-anchor="middle">EARS → failing tests → code</text>
+  <text x="327" y="367" font-size="7.5" fill="#6b7788" text-anchor="middle">hooks enforce policy</text>
+
+  <rect x="470" y="322" width="136" height="56" rx="6" fill="#fff" stroke="#0E1B2C" stroke-width="1.4"/>
+  <text x="538" y="341" font-size="10" fill="#0E1B2C" text-anchor="middle" font-weight="700">6 · Code Critic</text>
+  <text x="538" y="355" font-size="8.5" fill="#6b7788" text-anchor="middle">fresh context · read-only</text>
+  <text x="538" y="367" font-size="7.5" fill="#6b7788" text-anchor="middle">never self-grading</text>
+
+  <rect x="664" y="328" width="132" height="44" rx="17" fill="#e8eef6" stroke="#26415e"/>
+  <text x="730" y="346" font-size="8.5" fill="#26415e" text-anchor="middle" font-weight="600">Draft PR → agent/*</text>
+  <text x="730" y="358" font-size="7.5" fill="#26415e" text-anchor="middle">trailers: Implements · Session</text>
+
+  <!-- outer loop row1 -->
+  <rect x="48" y="446" width="420" height="50" rx="6" fill="#fafafa" stroke="#e3ddd4"/>
+  <text x="60" y="462" font-size="8" fill="#6b7788" font-weight="700">LEGEND:</text>
+  <rect x="115" y="453" width="34" height="14" rx="3" fill="#fff" stroke="#0E1B2C"/><text x="154" y="464" font-size="8" fill="#6b7788">agent</text>
+  <polygon points="196,460 210,453 224,460 210,467" fill="#E65B24"/><text x="229" y="464" font-size="8" fill="#6b7788">human gate</text>
+  <rect x="288" y="453" width="34" height="14" rx="7" fill="#e8eef6" stroke="#26415e"/><text x="327" y="464" font-size="8" fill="#6b7788">artifact/handoff</text>
+  <line x1="395" y1="460" x2="425" y2="460" stroke="#E65B24" stroke-dasharray="5 4" stroke-width="1.3"/><text x="430" y="464" font-size="8" fill="#6b7788">gate line</text>
+  <text x="60" y="484" font-size="8" fill="#6b7788">8 · Security Review + 7 · PR Review + 9 · CI-Fix run inside "required checks" and @claude events</text>
+
+  <rect x="480" y="446" width="180" height="50" rx="6" fill="#fff" stroke="#0E1B2C" stroke-width="1.4"/>
+  <text x="570" y="461" font-size="9.5" fill="#0E1B2C" text-anchor="middle" font-weight="700">Required checks (block)</text>
+  <text x="570" y="474" font-size="8" fill="#6b7788" text-anchor="middle">tests · eval gate · security scan</text>
+  <text x="570" y="486" font-size="8" fill="#6b7788" text-anchor="middle">AI review · traceability · OPA</text>
+
+  <rect x="710" y="450" width="100" height="46" rx="6" fill="#fff" stroke="#0E1B2C" stroke-width="1.4"/>
+  <text x="760" y="469" font-size="9.5" fill="#0E1B2C" text-anchor="middle" font-weight="700">Human merge</text>
+  <text x="760" y="482" font-size="8" fill="#6b7788" text-anchor="middle">agents excluded</text>
+
+  <rect x="840" y="450" width="110" height="46" rx="6" fill="#fff" stroke="#0E1B2C" stroke-width="1.4"/>
+  <text x="895" y="469" font-size="9.5" fill="#0E1B2C" text-anchor="middle" font-weight="700">Canary deploy</text>
+  <text x="895" y="482" font-size="8" fill="#6b7788" text-anchor="middle">SLO gates · rollback</text>
+
+  <!-- outer loop row2 -->
+  <rect x="48" y="506" width="560" height="48" rx="6" fill="#f3e8f2" stroke="#6d2a63"/>
+  <text x="328" y="525" font-size="9" fill="#6d2a63" text-anchor="middle" font-weight="700">LangSmith flywheel — failures &amp; reviewer corrections → annotation queues → datasets → CI eval gates</text>
+  <text x="328" y="540" font-size="8" fill="#6d2a63" text-anchor="middle">12 · LLM Judge scores every experiment · humans spot-check judge weekly</text>
+
+  <rect x="740" y="506" width="200" height="48" rx="6" fill="#fff" stroke="#0E1B2C" stroke-width="1.4"/>
+  <text x="840" y="524" font-size="9.5" fill="#0E1B2C" text-anchor="middle" font-weight="700">10 · Incident Investigator</text>
+  <text x="840" y="538" font-size="8" fill="#6b7788" text-anchor="middle">RCA + remediation proposal only</text>
+
+  <!-- gates -->
+  <g>
+    <polygon points="262,52 316,78 262,104 208,78" fill="#E65B24"/>
+    <text x="262" y="76" font-size="9" fill="#fff" text-anchor="middle" font-weight="700">G1 · PM</text>
+    <text x="262" y="88" font-size="7.5" fill="#fff" text-anchor="middle">clarification</text>
+    <text x="262" y="120" font-size="8" fill="#a63d12" text-anchor="middle">open questions block promotion</text>
+
+    <polygon points="600,52 654,78 600,104 546,78" fill="#E65B24"/>
+    <text x="600" y="76" font-size="9" fill="#fff" text-anchor="middle" font-weight="700">G2 · Architect</text>
+    <text x="600" y="88" font-size="7.5" fill="#fff" text-anchor="middle">design + findings</text>
+    <text x="600" y="120" font-size="8" fill="#a63d12" text-anchor="middle">approve / revise (durable interrupt)</text>
+
+    <polygon points="760,52 814,78 760,104 706,78" fill="#E65B24"/>
+    <text x="760" y="76" font-size="9" fill="#fff" text-anchor="middle" font-weight="700">G3 · PR review</text>
+    <text x="760" y="88" font-size="7.5" fill="#fff" text-anchor="middle">human merges</text>
+    <text x="760" y="120" font-size="8" fill="#a63d12" text-anchor="middle">no agent self-merge, ever</text>
+
+    <polygon points="940,52 994,78 940,104 886,78" fill="#E65B24"/>
+    <text x="940" y="76" font-size="9" fill="#fff" text-anchor="middle" font-weight="700">G4 · Ops</text>
+    <text x="940" y="88" font-size="7.5" fill="#fff" text-anchor="middle">remediation</text>
+    <text x="940" y="120" font-size="8" fill="#a63d12" text-anchor="middle">irreversible actions need approval</text>
+  </g>
+
+  <!-- traceability rail -->
+  <rect x="1002" y="150" width="26" height="400" rx="6" fill="#0E1B2C"/>
+  <text x="1019" y="440" font-size="8.5" fill="#fff" letter-spacing="2" transform="rotate(-90 1019 440)" font-weight="700">11 · TRACEABILITY SPINE (POSTGRES) — REQ ↔ DESIGN ↔ TASK ↔ PR ↔ TEST</text>
+
+  <!-- ADAF band -->
+  <text x="20" y="604" font-size="9.5" fill="#fff" font-weight="700" letter-spacing="1">ADAF DELIVERY</text>
+  <text x="20" y="618" font-size="9.5" fill="#fff" font-weight="700" letter-spacing="1">GOVERNANCE</text>
+  <text x="20" y="634" font-size="7.5" fill="#8b9ab0">phase-gated rollout · §12</text>
+  <g font-size="8.5" text-anchor="middle">
+    <rect x="180" y="592" width="130" height="38" rx="5" fill="#1c3452" stroke="#E65B24"/>
+    <text x="245" y="608" fill="#fff" font-weight="700">Gate 0 · Substrate</text><text x="245" y="621" fill="#8b9ab0" font-size="7.5">invariants tested</text>
+    <rect x="340" y="592" width="130" height="38" rx="5" fill="#1c3452" stroke="#E65B24"/>
+    <text x="405" y="608" fill="#fff" font-weight="700">Gate 1 · Bounded</text><text x="405" y="621" fill="#8b9ab0" font-size="7.5">review agents · baselines</text>
+    <rect x="500" y="592" width="130" height="38" rx="5" fill="#1c3452" stroke="#E65B24"/>
+    <text x="565" y="608" fill="#fff" font-weight="700">Gate 2 · Inner loop</text><text x="565" y="621" fill="#8b9ab0" font-size="7.5">acceptance ≥ baseline</text>
+    <rect x="660" y="592" width="130" height="38" rx="5" fill="#1c3452" stroke="#E65B24"/>
+    <text x="725" y="608" fill="#fff" font-weight="700">Gate 3 · RDR plane</text><text x="725" y="621" fill="#8b9ab0" font-size="7.5">gates &lt; 1 business day</text>
+    <rect x="820" y="592" width="130" height="38" rx="5" fill="#1c3452" stroke="#E65B24"/>
+    <text x="885" y="608" fill="#fff" font-weight="700">Gate 4 · Ops</text><text x="885" y="621" fill="#8b9ab0" font-size="7.5">DORA vs baseline</text>
+    <g stroke="#E65B24" stroke-width="1.2" marker-end="url(#arrO)">
+      <line x1="310" y1="611" x2="338" y2="611"/><line x1="470" y1="611" x2="498" y2="611"/>
+      <line x1="630" y1="611" x2="658" y2="611"/><line x1="790" y1="611" x2="818" y2="611"/>
+    </g>
+  </g>
+</svg>
+</div>
+<p style="font-size:.8rem;color:var(--muted);">Reading order: brief → agents 1–4 across the RDR plane (G1, G2 gating promotion) → spec artifacts → per-task dispatch into the sandboxed inner loop (agents 5–6) → draft PR → required checks and G3 human merge → canary → propose-only ops (agent 10, G4). The flywheel (bottom-left) closes the loop: every failure and reviewer correction becomes an eval case that gates future agent changes. The spine (right rail) makes every merge traceable to an approved requirement.</p>
+
+<h2 id="agents">2B · Agent catalog — everything that must be built</h2>
+<p>Twelve agents total: six LangGraph nodes (RDR), two Claude Code roles (inner loop), three CI/ops agents (outer loop), and one evaluator. Badges: <span class="rb rb-lg" style="font-size:.65rem;">LangGraph</span> <span class="rb rb-cc" style="font-size:.65rem;">Claude Code</span> <span class="rb rb-ci" style="font-size:.65rem;">CI / Actions</span> <span class="rb rb-ls" style="font-size:.65rem;">LangSmith</span></p>
+
+<div class="agrid">
+  <div class="agroup">
+    <h4>RDR plane</h4>
+    <div class="acard"><h5>1 · Elicitation Agent</h5><span class="rb rb-lg">LangGraph</span><span class="rb rb-cc">Sonnet</span>
+      <p><b>Role:</b> interrogate brief; surface ambiguity, assumptions, edge cases</p>
+      <p><b>Context:</b> brief + enterprise ontology + org memory (Store)</p>
+      <p><b>Output:</b> open-questions log + candidate stories</p>
+      <p><b>Gate:</b> feeds G1 — never invents answers</p></div>
+    <div class="acard"><h5>2 · EARS Formalizer</h5><span class="rb rb-lg">LangGraph</span><span class="rb rb-cc">Sonnet</span>
+      <p><b>Role:</b> stories → EARS criteria; INVEST/QUS scoring; story slicing; stable req IDs</p>
+      <p><b>Context:</b> stories + G1 answers + EARS rule skill</p>
+      <p><b>Output:</b> requirements.md · <b>Stack:</b> structured output + regex template validator</p></div>
+    <div class="acard"><h5>3 · Design Agent</h5><span class="rb rb-lg">LangGraph</span><span class="rb rb-cc">Opus</span>
+      <p><b>Role:</b> architecture, interface contracts, Mermaid, terse ADRs</p>
+      <p><b>Context:</b> approved requirements + platform constraints + prior ADRs (pgvector)</p>
+      <p><b>Output:</b> design.md → G2</p></div>
+    <div class="acard"><h5>3a · Threat Critic</h5><span class="rb rb-lg">LangGraph</span><span class="rb rb-cc">Opus</span>
+      <p><b>Role:</b> STRIDE review of design; severity + mitigation per finding</p>
+      <p><b>Context:</b> design.md only (isolated — did not write it)</p>
+      <p><b>Output:</b> findings → surfaced at G2</p></div>
+    <div class="acard"><h5>3b · Consistency Critic</h5><span class="rb rb-lg">LangGraph</span><span class="rb rb-cc">Opus</span>
+      <p><b>Role:</b> every EARS req ↔ design element; orphans both directions</p>
+      <p><b>Output:</b> coverage gaps → G2</p></div>
+    <div class="acard"><h5>4 · Planner / Estimator</h5><span class="rb rb-lg">LangGraph</span><span class="rb rb-cc">Sonnet</span>
+      <p><b>Role:</b> atomic tasks (one session each), req back-links, advisory estimates</p>
+      <p><b>Context:</b> requirements + design + historical items (pgvector RAG)</p>
+      <p><b>Output:</b> tasks.md; registers spine nodes</p></div>
+  </div>
+  <div class="agroup">
+    <h4>Inner loop</h4>
+    <div class="acard"><h5>5 · Coding Agent</h5><span class="rb rb-cc">Claude Code</span><span class="rb rb-cc">Sonnet</span>
+      <p><b>Role:</b> spec-derived failing tests first, then implement to green</p>
+      <p><b>Context:</b> one task + linked EARS reqs + design slice + CLAUDE.md (curated, never whole spec)</p>
+      <p><b>Output:</b> commits with Implements/Session trailers → draft PR</p>
+      <p><b>Stack:</b> Agent SDK dispatch · E2B microVM · hooks · max_turns</p></div>
+    <div class="acard"><h5>6 · Code Critic</h5><span class="rb rb-cc">Claude Code</span><span class="rb rb-cc">Opus</span>
+      <p><b>Role:</b> grade diff vs EARS criteria, security, conventions, test adequacy</p>
+      <p><b>Context:</b> fresh session — read-only tools, explicit rubric</p>
+      <p><b>Output:</b> findings only; 3–5 refinement rounds pre-PR</p></div>
+  </div>
+  <div class="agroup">
+    <h4>Outer loop</h4>
+    <div class="acard"><h5>7 · PR Review Agent</h5><span class="rb rb-ci">CI / Actions</span><span class="rb rb-cc">Sonnet</span>
+      <p><b>Role:</b> review every PR against its Implements: requirements; inline comments</p>
+      <p><b>Stack:</b> claude-code-action@v1 · never approves/merges</p></div>
+    <div class="acard"><h5>8 · Security Review Agent</h5><span class="rb rb-ci">CI / Actions</span>
+      <p><b>Role:</b> vulnerability scan on every PR (agent- and human-authored)</p>
+      <p><b>Stack:</b> claude-code-security-review · required status check</p></div>
+    <div class="acard"><h5>9 · CI-Fix Agent</h5><span class="rb rb-ci">CI / Actions</span><span class="rb rb-cc">Sonnet</span>
+      <p><b>Role:</b> red main → diagnose → proposal PR on agent/ci-fix/*</p>
+      <p><b>Stack:</b> headless claude -p · never pushes to main</p></div>
+    <div class="acard"><h5>10 · Incident Investigator</h5><span class="rb rb-lg">LangGraph</span><span class="rb rb-cc">Opus</span>
+      <p><b>Role:</b> parallel hypothesis fan-out over observability MCP tools; RCA + remediation proposal</p>
+      <p><b>Gate:</b> G4 — propose-only, always</p></div>
+  </div>
+  <div class="agroup">
+    <h4>Cross-cutting</h4>
+    <div class="acard"><h5>11 · Traceability Steward</h5><span class="rb rb-lg">LangGraph</span><span class="rb rb-cc">Haiku/Sonnet</span>
+      <p><b>Role:</b> ingest merges/tests into the Postgres spine; nightly drift detection; RTM drafting</p>
+      <p><b>Rule:</b> AI drafts links, humans verify a sample (~10% + all low-confidence); sole write identity to the spine</p></div>
+    <div class="acard"><h5>12 · LLM Judge</h5><span class="rb rb-ls">LangSmith</span><span class="rb rb-ci">Cross-family</span>
+      <p><b>Role:</b> score eval experiments against rubrics (fidelity, recall, precision)</p>
+      <p><b>Rule:</b> different model family from the generators (via LiteLLM); validated against human labels before it gates; audited weekly</p></div>
+    <div class="acard" style="border-top-color:var(--muted);"><h5>Not agents (deliberately)</h5>
+      <p>Merge decisions, gate approvals, judge-of-judges, budget overrides — humans. Deterministic validators (EARS regex, OPA, traceability Cypher) — plain code, not LLM calls.</p></div>
+  </div>
+</div>
+
+<table>
+  <tr><th>#</th><th>Agent</th><th>Runtime &amp; stack</th><th>Model</th><th>Context consumed</th><th>Primary output</th><th>Gate relationship</th></tr>
+  <tr><td>1</td><td>Elicitation</td><td>LangGraph node · structured output</td><td>Sonnet</td><td>Brief, ontology, org memory</td><td>Open questions + stories</td><td>Blocks until G1 resolves</td></tr>
+  <tr><td>2</td><td>EARS Formalizer</td><td>LangGraph node + regex validator</td><td>Sonnet</td><td>Stories + G1 answers + EARS rules</td><td>requirements.md (IDs)</td><td>Auto-gate: template validity ≥ .98</td></tr>
+  <tr><td>3</td><td>Design</td><td>LangGraph node</td><td>Opus</td><td>Requirements, constraints, prior ADRs</td><td>design.md + ADRs</td><td>Submits to G2</td></tr>
+  <tr><td>3a</td><td>Threat Critic</td><td>LangGraph parallel node</td><td>Opus</td><td>design.md only</td><td>STRIDE findings</td><td>Evidence at G2</td></tr>
+  <tr><td>3b</td><td>Consistency Critic</td><td>LangGraph parallel node</td><td>Opus</td><td>requirements + design</td><td>Coverage gaps/orphans</td><td>Evidence at G2</td></tr>
+  <tr><td>4</td><td>Planner/Estimator</td><td>LangGraph node + pgvector RAG</td><td>Sonnet</td><td>Approved design + history</td><td>tasks.md (req links, est.)</td><td>Post-G2; estimates advisory</td></tr>
+  <tr><td>5</td><td>Coding Agent</td><td>Agent SDK session · E2B sandbox · hooks</td><td>Sonnet</td><td>One task + linked reqs + design slice + CLAUDE.md</td><td>Tests + code, trailed commits</td><td>Output → checks → G3</td></tr>
+  <tr><td>6</td><td>Code Critic</td><td>Claude Code subagent, read-only</td><td>Opus</td><td>Diff + rubric + EARS criteria</td><td>Findings (no fixes)</td><td>Pre-PR quality bar</td></tr>
+  <tr><td>7</td><td>PR Review</td><td>claude-code-action@v1</td><td>Sonnet</td><td>PR diff + Implements: reqs</td><td>Inline comments</td><td>Required check before G3</td></tr>
+  <tr><td>8</td><td>Security Review</td><td>claude-code-security-review</td><td>—</td><td>PR diff</td><td>Vulnerability findings</td><td>Required check before G3</td></tr>
+  <tr><td>9</td><td>CI-Fix</td><td>Headless claude -p in ephemeral runner</td><td>Sonnet</td><td>Failing build logs + repo</td><td>Proposal PR (agent/ci-fix/*)</td><td>Its PR flows through G3</td></tr>
+  <tr><td>10</td><td>Incident Investigator</td><td>LangGraph graph over obs. MCP tools</td><td>Opus</td><td>Alerts, traces, deploy history</td><td>RCA + remediation proposal</td><td>G4 — propose-only</td></tr>
+  <tr><td>11</td><td>Traceability Steward</td><td>LangGraph cron + spine MCP (sole writer)</td><td>Haiku/Sonnet</td><td>Merges, test files, specs</td><td>Spine updates + drift flags</td><td>Humans verify sampled links (~10% + low-confidence)</td></tr>
+  <tr><td>12</td><td>LLM Judge</td><td>LangSmith evaluator</td><td>Cross-family via LiteLLM</td><td>Run outputs + rubric + reference</td><td>Scores + cited evidence</td><td>Feeds CI eval gate; validated vs human labels before enforcing</td></tr>
+</table>
+
+<h2 id="minfoot">2C · Minimal AIOS footprint — experiences &amp; disciplines required</h2>
+<p>V2 is implementable with <strong>26 of the 45 AIOS disciplines</strong>. The other 19 (Fine-Tuning &amp; PEFT, Edge &amp; On-Device, Multimodal, Streaming UX, Semantic Layer/NL2SQL, Data Product Eng, Synthetic Data, Agent Communication Protocols/A2A, most of the remaining Experiences disciplines, etc.) are not required for this workload — activating them would be scope creep, not rigor.</p>
+
+<h3>Experience surfaces (L1) — the minimum set</h3>
+<table>
+  <tr><th>Surface</th><th>Serves</th><th>Discipline</th></tr>
+  <tr><td>Agent Inbox (LangGraph HITL UI)</td><td>G1/G2/G4 approvals with full context + trace link; resume-anywhere</td><td>Human-Agent Collaboration Design</td></tr>
+  <tr><td>GitHub PR view</td><td>G3 — diff, agent review comments, check statuses, requirement links</td><td>Human-Agent Collaboration + Transparency</td></tr>
+  <tr><td>Trace links on every artifact</td><td>Reviewer sees plan, evidence, trajectory before deciding — gates stay fast</td><td>Agent Transparency Design</td></tr>
+  <tr><td>Jira/Slack notifications</td><td>Gate-pending alerts; intake; steward drift flags</td><td>AI-Infused Operational Workflow Design</td></tr>
+  <tr><td>Annotation queues (LangSmith)</td><td>Corrections captured where reviewers already work → datasets</td><td>Feedback Loop Engineering</td></tr>
+</table>
+
+<h3>Minimal discipline set by layer, with dependent agents</h3>
+<table>
+  <tr><th>Layer</th><th>Disciplines (minimal)</th><th>V2 requirement served</th><th>Dependent agents</th></tr>
+  <tr><td><span class="lbadge l1">L1</span>Experiences (3 of 9)</td><td>Human-Agent Collaboration · Agent Transparency · Feedback Loop Eng.</td><td>Fast human gates; trace-visible decisions; corrections→evals</td><td>All gated flows (G1–G4) · 12</td></tr>
+  <tr><td><span class="lbadge l2">L2</span>Context (4 of 9)</td><td>Context Engineering · Knowledge Graph · Retrieval · Memory Architecture</td><td>EARS spec contract; curated handoffs; traceability spine; estimation RAG; org memory</td><td>1, 2, 4, 5, 11</td></tr>
+  <tr><td><span class="lbadge l3">L3</span>Agentic (7 of 9)</td><td>Workflow Orchestration · Multi-Agent Architecture · HITL Eng. · Tool &amp; MCP · Agent Runtime · Model Routing · Failure &amp; Recovery</td><td>The LangGraph plane, gates, sandboxes, dispatch, routing, checkpointed resume</td><td>1–4, 3a/3b, 10 (graphs) · 5–6 (runtime) · all (routing/MCP)</td></tr>
+  <tr><td><span class="lbadge l4">L4</span>Governance (6 of 9)</td><td>Policy-as-Code · Eval Engineering · AI Observability · Agent Identity &amp; Access · AI Audit &amp; Explainability · Red-Teaming</td><td>Platform-enforced invariants; CI eval gates; one trace plane; per-agent identity; RTM audit; injection defense</td><td>7, 8, 9, 12 directly; constrains all 12</td></tr>
+  <tr><td><span class="lbadge l5">L5</span>Substrate (6 of 9)</td><td>Harness Eng. · AI-Infused PDLC/ADLC · LLMOps · DevSecOps &amp; AI Security · Infrastructure Cost · SRE for AI</td><td>Claude Code harness; the PDLC workflow itself; CI operation; sandbox/egress security; budgets; canary/SLO/rollback</td><td>5, 6, 9 directly; hosts the whole estate</td></tr>
+</table>
+<div class="callout"><strong>Minimality test:</strong> remove any one of the 26 and a named V2 invariant breaks — e.g. drop Knowledge Graph Eng. and merges can no longer be traced to approved requirements (invariant 7); drop Red-Teaming and CI runners reading untrusted text are undefended; drop Feedback Loop Eng. and the eval flywheel starves. Nothing else on the 45-discipline map has that property for this workload.</div>
+
+<h2 id="split">3 · Runtime split — the one decision that shapes everything</h2>
+<table>
+  <tr><th>Runtime</th><th>Owns</th><th>Why</th></tr>
+  <tr><td><strong>LangGraph</strong> (long-lived service, FastAPI + Postgres) — <em>enters at ADAF Gate 3 (r2)</em></td><td>RDR pipeline, human gates, critic fan-out, ops workflows, traceability steward, inner-loop <em>dispatch</em></td><td>Deterministic, checkpointed state machines; <code>interrupt()</code> makes gates durable (a PM can answer 3 days later — state resumes exactly); explicit topology = no emergent swarm behavior. Gates 0–2 need none of this — they run on Claude Code + Actions + LangSmith alone</td></tr>
+  <tr><td><strong>Claude Code / Agent SDK</strong> (ephemeral session per task, in sandbox)</td><td>All repo work: test-first implementation, refactors, actor–critic review rounds</td><td>Production-hardened coding harness: repo context (CLAUDE.md), subagents, deterministic hooks, permission modes — rebuilding this in LangGraph would be wasted engineering</td></tr>
+  <tr><td><strong>GitHub Actions</strong> (event-driven)</td><td>@claude triage, PR review, security scan, CI-failure fix proposals, eval gate, OPA merge checks</td><td>Outer loop belongs on existing CI substrate (V1 lesson: reuse, don't invent infra)</td></tr>
+  <tr><td><strong>LangSmith</strong> (SaaS or self-hosted)</td><td>Tracing (both runtimes), datasets/evals, annotation queues, dashboards/alerts</td><td>Single pane across the split — the property that makes the two-runtime design governable</td></tr>
+</table>
+<div class="callout"><strong>Rule of thumb:</strong> if the step is a <em>pipeline stage with a gate</em>, it's a LangGraph node. If the step <em>touches the repo</em>, it's a Claude Code session dispatched by a node. Never orchestrate multi-hour repo work inside a single LangGraph node, and never encode pipeline governance inside a Claude Code prompt.</div>
+
+<h2 id="rdr">4 · RDR pipeline as a LangGraph StateGraph</h2>
+
+<h3>4.1 State schema</h3>
+<pre><code>> pip install -U langgraph langchain-anthropic langgraph-checkpoint-postgres langsmith
+
+from typing import TypedDict, Literal
+from pydantic import BaseModel
+
+class EARSRequirement(BaseModel):
+    id: str                      # "FEAT-123-R4" — stable, global; the traceability currency
+    pattern: Literal["ubiquitous","event","state","unwanted","optional"]
+    text: str                    # must match its EARS template — validated, not hoped
+    invest_score: dict[str, int] # I,N,V,E,S,T each 1-5
+    source_story: str
+
+class GateDecision(BaseModel):
+    gate: str; approver: str; decision: str; comment: str; ts: str  # audit trail (L4)
+
+class RDRState(TypedDict):
+    feature_id: str
+    brief: str
+    open_questions: list[dict]        # [{q, answer|None, load_bearing}]
+    stories: list[dict]
+    requirements: list[EARSRequirement]
+    design_md: str | None
+    adrs: list[str]
+    critic_findings: list[dict]       # threat + consistency, merged
+    tasks: list[dict]                 # each: {id, desc, req_ids[], est}
+    gate_log: list[GateDecision]</code></pre>
+
+<h3>4.2 Nodes — clarify, gates, formalize, critics</h3>
+<pre><code>from langgraph.graph import StateGraph, START, END
+from langgraph.types import interrupt, Command
+from langchain_anthropic import ChatAnthropic
+
+clarifier  = ChatAnthropic(model="claude-sonnet-5", max_tokens=4096)
+formalizer = ChatAnthropic(model="claude-sonnet-5")
+designer   = ChatAnthropic(model="claude-opus-5")      # frontier tier for architecture
+critic_llm = init_chat_model(CRITIC_MODEL)             # r2: CROSS-FAMILY via LiteLLM —
+# same-family generator/critic pairs share blind spots; route critics & judge to a
+# different model family (config, not code — CRITIC_MODEL lives with the model pins)
+
+def clarify(state: RDRState) -> dict:
+    """Elicitation agent. Interrogates the brief; NEVER invents answers."""
+    result = clarifier.with_structured_output(ClarifyOutput).invoke(
+        CLARIFY_PROMPT.format(brief=state["brief"]))   # prompt = versioned asset, eval-gated
+    return {"open_questions": result.questions, "stories": result.candidate_stories}
+
+def pm_gate(state: RDRState) -> Command[Literal["clarify", "formalize"]]:
+    """HUMAN GATE 1 — durable pause. Unresolved ambiguity blocks promotion."""
+    unanswered = [q for q in state["open_questions"] if q["answer"] is None]
+    if unanswered:
+        answers = interrupt({                    # surfaces in Agent Inbox; graph sleeps
+            "gate": "pm_clarification",
+            "feature": state["feature_id"],
+            "questions": unanswered,
+        })                                       # resumes here — days later is fine
+        merged = apply_answers(state["open_questions"], answers)
+        if any(q["answer"] is None for q in merged):
+            return Command(goto="clarify", update={"open_questions": merged})
+    return Command(goto="formalize",
+                   update={"gate_log": state["gate_log"] + [log_gate("pm", answers)]})
+
+def formalize(state: RDRState) -> dict:
+    reqs = formalizer.with_structured_output(list[EARSRequirement]).invoke(
+        EARS_PROMPT.format(stories=state["stories"], answers=state["open_questions"]))
+    for r in reqs:
+        assert ears_regex_valid(r)               # deterministic template validation
+    return {"requirements": [slice_if_oversized(r) for r in reqs]}</code></pre>
+
+<h3>4.3 Critic fan-out and the architect gate</h3>
+<pre><code>def design(state: RDRState) -> dict:
+    out = designer.invoke(DESIGN_PROMPT.format(
+        requirements=state["requirements"], constraints=load_constraints()))
+    return {"design_md": out.design_md, "adrs": out.adrs}   # ADRs: terse, agent-optimized
+
+def threat_critic(state: RDRState) -> dict:      # runs in PARALLEL with consistency_critic
+    f = critic_llm.invoke(STRIDE_PROMPT.format(design=state["design_md"]))
+    return {"critic_findings": f.findings}       # reducer merges both critics' findings
+
+def consistency_critic(state: RDRState) -> dict:
+    f = critic_llm.invoke(COVERAGE_PROMPT.format(
+        requirements=state["requirements"], design=state["design_md"]))
+    return {"critic_findings": f.orphans_and_gaps}
+
+def architect_gate(state: RDRState) -> Command[Literal["design", "plan_tasks"]]:
+    """HUMAN GATE 2 — architect sees design + BOTH critics' findings + trace link."""
+    d = interrupt({"gate": "architect_review", "design": state["design_md"],
+                   "findings": state["critic_findings"],
+                   "trace_url": current_run_url()})          # L1 transparency
+    if d["decision"] == "revise":
+        return Command(goto="design", update={"brief_addendum": d["comment"]})
+    return Command(goto="plan_tasks", update={"gate_log": [...]})
+
+# ---- wiring ----
+g = StateGraph(RDRState)
+for n in (clarify, pm_gate, formalize, design, threat_critic,
+          consistency_critic, architect_gate, plan_tasks, write_artifacts): g.add_node(n)
+g.add_edge(START, "clarify"); g.add_edge("clarify", "pm_gate")
+g.add_edge("formalize", "design")
+g.add_edge("design", "threat_critic"); g.add_edge("design", "consistency_critic")
+g.add_edge("threat_critic", "architect_gate"); g.add_edge("consistency_critic", "architect_gate")
+g.add_edge("plan_tasks", "write_artifacts"); g.add_edge("write_artifacts", END)
+
+from langgraph.checkpoint.postgres import PostgresSaver
+with PostgresSaver.from_conn_string(PG_DSN) as cp:
+    rdr = g.compile(checkpointer=cp)             # durable: every step checkpointed
+# invoke with thread_id = feature_id → one resumable thread per feature
+rdr.invoke({"feature_id": "FEAT-123", "brief": brief},
+           config={"configurable": {"thread_id": "FEAT-123"}})</code></pre>
+<ul>
+  <li><code>write_artifacts</code> commits <code>specs/FEAT-123/{requirements,design,tasks}.md</code> to a branch via the GitHub MCP server and registers rows/links in the Postgres spine (§7).</li>
+  <li><strong>Risk-tiered gating (r2), not uniform gates:</strong> a tier matrix replaces the binary full/delta split. <em>Tier 0</em> (docs, config, two-line fixes): delta graph, no G1/G2. <em>Tier 1</em> (bounded feature work): G1 only, G2 waived if the consistency critic is clean. <em>Tier 2</em> (new interfaces, data model, security surface): full G1+G2. <em>Tier 3</em> (irreversible/regulated): full gates + explicit sign-off. Tiering is assigned at intake, auditable, and gates carry SLAs (&lt; 1 business day) with escalation — the METR lesson is that review capacity is the constraint; gates must be spent where risk lives.</li>
+  <li><strong>EARS scope (r2):</strong> EARS is mandatory for <em>functional</em> acceptance criteria only. NFRs (latency, cost, availability) are captured as measurable fitness functions with budgets, verified in CI/canary — not shoehorned into WHEN/SHALL. Anything not machine-checkable carries an explicit <code>untestable: reason</code> flag so it is consciously accepted, never silently dropped.</li>
+  <li>Every prompt (<code>CLARIFY_PROMPT</code>, <code>EARS_PROMPT</code>…) is a versioned file; changing one triggers the eval gate (§8).</li>
+</ul>
+
+<h2 id="inner">5 · Inner loop — Claude Code dispatched per task</h2>
+
+<h3>5.1 Dispatch from LangGraph (Agent SDK)</h3>
+<pre><code>from claude_agent_sdk import query, ClaudeAgentOptions
+
+async def implement_task(task: dict, feature_id: str) -> dict:
+    """One bounded session per task — V1 compounding-error rule. Runs INSIDE the sandbox."""
+    opts = ClaudeAgentOptions(
+        cwd=f"/sandbox/repo",
+        permission_mode="acceptEdits",
+        allowed_tools=["Read","Edit","Write","Bash","Grep","Glob"],
+        max_turns=40,                                   # runaway guard
+        model="claude-sonnet-5",
+        system_prompt_append=HANDOFF_CONTRACT.format(   # curated context, not the whole spec
+            task=task,
+            requirements=load_reqs(task["req_ids"]),    # only linked EARS requirements
+            design_slice=slice_design(feature_id, task) # only relevant sections + ADRs
+        ))
+    async for msg in query(
+        prompt=f"""Task {task['id']}. FIRST write failing tests encoding each EARS
+        criterion verbatim (one test per criterion, named test_{{req_id}}).
+        THEN implement until green. Never modify the tests after writing them.
+        Commit with trailer: Implements: {','.join(task['req_ids'])}""",
+        options=opts):
+        record_to_langsmith(msg)                        # unified tracing (§9)
+    return session_summary(msg)</code></pre>
+
+<h3>5.2 Actor–critic round (never self-grading)</h3>
+<p>After implementation, a <em>fresh</em> session — new context, reviewer subagent, read-only tools — grades against an explicit rubric. Findings loop back (max 3–5 rounds) before the PR opens:</p>
+<pre><code># .claude/agents/code-reviewer.md
+---
+name: code-reviewer
+description: Reviews a diff against linked EARS requirements. Read-only.
+tools: Read, Grep, Glob, Bash(git diff:*)
+model: opus
+---
+You did not write this code. Review the diff against: (1) each EARS criterion —
+met/not-met with evidence; (2) security (OWASP top-10, secrets, injection);
+(3) repo conventions per CLAUDE.md; (4) test adequacy — do tests genuinely
+encode the criteria or merely mirror the implementation? Findings only. No fixes.</code></pre>
+
+<h3>5.3 Hooks — deterministic policy (identical in local, sandbox, CI)</h3>
+<pre><code>// .claude/settings.json
+{ "hooks": {
+    "PreToolUse": [
+      {"matcher":"Bash", "hooks":[{"type":"command","command":"hooks/deny-egress-and-danger.sh"}]},
+      {"matcher":"Edit|Write","hooks":[{"type":"command","command":"hooks/protect.sh"}]}
+      // protect.sh denies: specs/**/requirements.md after gate, evals/**, .github/**, migrations/**
+    ],
+    "PostToolUse": [
+      {"matcher":"Edit|Write","hooks":[{"type":"command","command":"hooks/lint-test-touched.sh"}]}
+    ]}}</code></pre>
+
+<h3>5.4 Sandbox tiers <span style="color:var(--red);font-weight:700;">(Agent Runtime Eng., L3)</span></h3>
+<table>
+  <tr><th>Tier</th><th>Boundary</th><th>Controls</th></tr>
+  <tr><td>Developer-attended</td><td>Devcontainer</td><td>No host credential mounts; permission prompts on; hooks active</td></tr>
+  <tr><td>Autonomous (dispatched)</td><td>E2B / Firecracker microVM per session</td><td>Snapshot pools for cold start; egress allowlist = model endpoint + package registry only; repo checkout is ephemeral; VM destroyed post-session</td></tr>
+  <tr><td>CI (event-driven)</td><td>Ephemeral Actions runner</td><td>Scoped <code>GITHUB_TOKEN</code>, <code>contents:write</code> on <code>agent/*</code> only; no long-lived secrets; <code>--max-turns</code> always set</td></tr>
+</table>
+
+<h2 id="outer">6 · Outer loop — CI, review, deployment, ops</h2>
+<ul>
+  <li><strong>Every PR:</strong> <code>anthropics/claude-code-action@v1</code> reviews the diff against the EARS requirements in its <code>Implements:</code> trailer (posts inline comments, never approves) + <code>claude-code-security-review</code> scan. Required status checks: tests · security · <strong>eval gate</strong> (§8) · <strong>traceability check</strong> (§7) · OPA policy check.</li>
+  <li><strong>OPA merge policy (Policy-as-Code, L4):</strong> Rego rules evaluated in CI — deny merge if: PR author is an agent identity AND any approver is an agent identity; no <code>Implements:</code> trailer; eval-gate status missing; diff touches protected paths without a human commit.</li>
+  <li><strong>CI-failure autofix:</strong> red main triggers a headless session that opens a <em>proposal</em> PR on <code>agent/ci-fix/*</code>. Never pushes to main.</li>
+  <li><strong>Deployment verification (SRE for AI, L5):</strong> agent-authored changes deploy behind canary gates (error rate, latency, burn-rate SLO) with automated rollback — standard progressive delivery (Argo Rollouts / Harness), agent-agnostic by design.</li>
+  <li><strong>Ops agents:</strong> incident-investigation as a LangGraph graph — parallel hypothesis nodes over observability MCP tools, synthesis node drafts the RCA + remediation <em>proposal</em>, <code>interrupt()</code> for approval. Propose-only, always: the industry consensus line (Datadog/PagerDuty pattern).</li>
+</ul>
+
+<h2 id="trace">7 · Traceability spine — Postgres-first (r2)</h2>
+<p><strong>r2 change:</strong> the spine's logical model is a graph; its storage is <strong>Postgres</strong> — the same instance already holding checkpoints, vectors and Store. At PDLC scale these are joins, not deep traversals: one less tier-0 system, one backup story, one identity. Promote to Neo4j only when a measured need appears (multi-hop impact analysis across hundreds of features).</p>
+<pre><code>-- Relational spine (Knowledge Graph Eng., L2 · feeds Audit & Explainability, L4)
+-- tables: requirements(id, feature_id, ears_pattern, text, status)
+--         design_elements(id, feature_id, name, doc_anchor) · tasks(id, est, status)
+--         prs(number, url, agent_session_id) · tests(path, name) · gate_decisions(gate, approver, ts)
+-- links:  addressed_by(req_id, elem_id) · implements(task_id, req_id)
+--         completes(pr_id, task_id) · verifies(test_id, req_id) · approved(gate_id, target_id)
+
+-- CI traceability check:
+SELECT r.id AS orphan
+FROM   requirements r
+WHERE  r.feature_id = :feature AND r.status = 'approved'
+AND    (NOT EXISTS (SELECT 1 FROM implements i WHERE i.req_id = r.id)
+     OR NOT EXISTS (SELECT 1 FROM verifies v  WHERE v.req_id = r.id));
+-- any rows → status check fails</code></pre>
+<ul>
+  <li><strong>Writers:</strong> the RDR graph registers requirements/design/tasks at <code>write_artifacts</code>; a webhook-driven steward ingests PR merges and test files (parsing <code>Implements:</code> trailers and <code>test_&lt;req_id&gt;</code> names).</li>
+  <li><strong>Drift detection:</strong> nightly steward job diffs merged code vs approved specs; drafts link updates and drift flags into a review queue — <em>AI drafts, humans verify a sample</em> (~10% random + every low-confidence link), not every link (r2 — verify-everything doesn't scale).</li>
+  <li><strong>Degradation (r2):</strong> spine unavailable → traceability check reports <em>warn-and-queue</em> with a 24-hour grace window (merges proceed, links back-filled and verified on recovery); hard fail-closed applies only to Tier-3 changes. A secondary datastore must not be a tier-0 merge dependency.</li>
+  <li>The spine is exposed to agents via a read-only MCP server; writes go only through the steward service identity.</li>
+</ul>
+
+<h2 id="evals">8 · Eval engineering — LangSmith as the regression gate</h2>
+<div class="callout"><strong>Cold-start rule (r2):</strong> a gate with an empty dataset is theater. Evals run <strong>report-only</strong> through ADAF Gate 1 while datasets are seeded from three sources: historical tickets/PRs (real requirements with known outcomes), synthetic cases (planted ambiguities, planted bugs), and early reviewer corrections via annotation queues. Enforcement switches on per dataset once it holds <strong>~50+ labeled examples</strong> and a measured baseline — and only after the judge itself is validated against human labels (agreement ≥ agreed threshold).</div>
+
+<h3>8.1 Datasets (golden sets per agent surface)</h3>
+<table>
+  <tr><th>Dataset</th><th>Contents</th><th>Judged on</th></tr>
+  <tr><td><code>rdr-clarify</code></td><td>Briefs with known planted ambiguities</td><td>Ambiguity recall · question quality · no invented answers</td></tr>
+  <tr><td><code>rdr-formalize</code></td><td>Story sets → reference EARS requirements</td><td>Template validity (deterministic) · semantic fidelity (judge) · INVEST accuracy</td></tr>
+  <tr><td><code>design-critics</code></td><td>Designs with planted threats/coverage gaps</td><td>Finding recall/precision per critic</td></tr>
+  <tr><td><code>code-review</code></td><td>Diffs with known bugs vs clean diffs</td><td>Catch rate · false-positive rate</td></tr>
+</table>
+
+<h3>8.2 CI gate</h3>
+<pre><code>from langsmith import Client, evaluate
+client = Client()
+
+def ears_validity(run, example):                 # deterministic evaluator
+    reqs = run.outputs["requirements"]
+    return {"key": "ears_valid", "score": sum(ears_regex_valid(r) for r in reqs)/len(reqs)}
+
+judge = create_llm_judge(                        # r2: judge is CROSS-FAMILY, required —
+    model=JUDGE_MODEL,                           # different family from the generators
+    rubric="Does each requirement faithfully capture the story intent without "
+           "additions, omissions, or ambiguity? Score 0-1 with cited evidence.")
+
+results = evaluate(formalize_target, data="rdr-formalize",
+                   evaluators=[ears_validity, judge],
+                   experiment_prefix=f"ci-{GIT_SHA}")
+assert mean(results, "ears_valid") >= 0.98       # hard floor
+assert mean(results, "judge") >= baseline("rdr-formalize") - 0.02   # no regression
+# Runs on every change to: prompts/**, .claude/**, CLAUDE.md, model pins, graph code.
+# Failure = red status check = no merge — ONCE the dataset is seeded and the judge
+# validated (report-only before that, per the r2 cold-start rule).</code></pre>
+
+<h3>8.3 The flywheel (Feedback Loop Eng., L1 → Eval Eng., L4)</h3>
+<ol>
+  <li>Production failure or reviewer correction observed (gate rejection, PR comment, drift flag).</li>
+  <li>The implicated LangSmith trace is sent to an <strong>annotation queue</strong>; a human labels expected behavior.</li>
+  <li>Labeled trace is promoted into the relevant dataset — the failure can never silently recur.</li>
+  <li>Weekly: review judge/human agreement on a sample; recalibrate rubrics (judges drift too).</li>
+</ol>
+
+<h2 id="obs">9 · Observability — one trace plane across both runtimes</h2>
+<ul>
+  <li><strong>LangGraph side:</strong> <code>LANGSMITH_TRACING=true</code> — every node, LLM call, interrupt, and resume traced per thread; the feature's whole RDR history is one navigable tree.</li>
+  <li><strong>Claude Code side:</strong> <code>CLAUDE_CODE_ENABLE_TELEMETRY=1</code> + OTLP exporter → OTel Collector → LangSmith (OTLP ingest), tagged with <code>feature_id</code>/<code>task_id</code>/<code>agent_session_id</code> so coding sessions nest under their dispatching pipeline trace.</li>
+  <li><strong>Correlation key discipline:</strong> <code>feature_id</code> is the thread ID, the spine partition key, the commit-trailer prefix, and the trace tag — one join key end to end.</li>
+  <li><strong>Dashboards/alerts:</strong> gate latency (is review the bottleneck? — V1's METR warning, watched weekly) · acceptance rate per agent surface (honest range ~35–44%) · post-merge churn on agent commits · token cost per feature per node · eval score trends · DORA before/after.</li>
+</ul>
+
+<h2 id="gov">10 · Governance &amp; security consolidated</h2>
+<div class="callout invariant"><strong>Platform-enforced invariants (all three enforcement points):</strong>
+<ol>
+  <li><strong>No agent merges/approves its own work</strong> — GitHub ruleset (agent Apps excluded from approvers) + OPA CI check + branch protection.</li>
+  <li><strong>No agent grades its own output</strong> — critics are separate LangGraph nodes / fresh Claude sessions; spec-derived tests are the acceptance gate.</li>
+  <li><strong>Gates block, not warn</strong> — <code>interrupt()</code> halts the graph; hooks deny writes to gated artifacts; CI checks are <em>required</em>. (Scoped in r2: the traceability check alone degrades to warn-and-queue per §7 — human gates and eval/security checks never do.)</li>
+  <li><strong>Sandbox always</strong> — microVM/ephemeral runner, egress allowlist, <code>agent/*</code> write scope, no long-lived credentials.</li>
+  <li><strong>Irreversibility → human</strong> — money, deletion, prod config: PreToolUse deny + interrupt escalation.</li>
+  <li><strong>Every agent identity is real identity</strong> — one GitHub App per agent surface; every commit carries <code>Agent-Session:</code> + <code>Implements:</code> trailers.</li>
+  <li><strong>Eval gate on every agent-estate change</strong> — prompts, hooks, graph code, model pins are code.</li>
+</ol></div>
+<ul>
+  <li><strong>Prompt-injection defense (Red-Teaming, L4):</strong> untrusted text (issue bodies, PR comments, vendor advisories) is never concatenated into privileged sessions — it enters via MCP tools that return it as <em>data</em> with provenance labels; promptfoo red-team suites run the injection corpus against clarify/review surfaces in CI; CI runners that read untrusted text hold no write credentials.</li>
+  <li><strong>Data boundary (Privacy &amp; Sovereignty, L4):</strong> model access via Bedrock/Vertex where residency demands; LangSmith self-hosted option inside the VPC; specs and traces never leave the identity boundary.</li>
+  <li><strong>MCP supply chain (r2):</strong> MCP servers are themselves attack surface (tool poisoning, dependency compromise). Every MCP server in the estate carries an AIBOM/SBOM, a signed release (cosign + transparency log), and a version-pinned manifest; agents connect only to registry-listed, attested servers — the same attestation discipline applied to any other production dependency.</li>
+</ul>
+
+<h2 id="infra">11 · Infrastructure, cost &amp; durability</h2>
+<table>
+  <tr><th>Concern</th><th>Implementation</th></tr>
+  <tr><td>Model routing (L3)</td><td>Per-node pinning (clarify/formalize → Sonnet; design/critics/judge → Opus; bulk classification → Haiku). LiteLLM gateway in front for provider portability (Anthropic API ↔ Bedrock ↔ Vertex), per-key budgets, and non-Claude models where evals justify.</td></tr>
+  <tr><td>Cost control (L5)</td><td>Budgets at design time: per-feature token budget asserted from trace data; <code>max_turns</code> on every session; prompt caching on stable system context (CLAUDE.md, EARS rules); monthly per-surface cost report. Alert at 80% of budget, halt dispatch at 100%. <strong>r2 — publish the number:</strong> a per-feature cost model (RDR + N tasks × M critic rounds + review + evals, by model tier) is built from measured Gate-1 traces; Gate-2 entry requires <em>cost per accepted PR</em> below an agreed threshold. Unmodeled cost is the silent killer of agent programs.</td></tr>
+  <tr><td>Durability</td><td>LangGraph Postgres checkpointing covers the RDR pipeline (gates spanning days). For multi-week programs (migration waves): Temporal-outer — each activity = one bounded Claude session; retries/compensation in Temporal, never in the model's context.</td></tr>
+  <tr><td>Deployment of the plane itself</td><td>LangGraph service: containerized FastAPI, K8s/ECS, HPA on queue depth. Postgres (checkpoints + pgvector + Store): managed (RDS/Cloud SQL). Spine: in the same managed Postgres (Neo4j Aura only if promoted). Sandboxes: E2B cloud or Firecracker on dedicated nodes. Everything IaC.</td></tr>
+  <tr><td>Failure modes rehearsed</td><td>Model outage → LiteLLM failover tier + graph pauses at checkpoint (no lost state). Sandbox pool exhaustion → dispatch queue backpressure. LangSmith outage → OTel Collector buffers; evals re-run on recovery. Spine down → warn-and-queue, 24h grace, back-fill on recovery (r2; Tier-3 changes alone fail closed).</td></tr>
+  <tr><td>Dependency churn (r2)</td><td>LangGraph / Agent SDK / LangSmith APIs move fast: pin exact versions; contract tests against each SDK surface run in CI; upgrades land as ordinary PRs through the same eval gate as prompt changes. The agent estate never floats on <code>latest</code>.</td></tr>
+</table>
+
+<h2 id="roadmap">12 · Delivery roadmap — ADAF-gated</h2>
+<table>
+  <tr><th>Gate</th><th>Deliverables</th><th>Exit evidence</th></tr>
+  <tr><td><strong>0 · Substrate</strong> (2–4 wks)</td><td><em>Minimal stack only (r2): Claude Code + Actions + LangSmith + Postgres — no LangGraph yet.</em> OTel wiring · sandbox tier + egress allowlist · hooks baseline · GitHub Apps + rulesets + OPA checks · commit-trailer convention · eval dataset seeding starts (report-only) · <strong>human baseline captured</strong>: review cycle time, post-merge churn, DORA — without it, every later "vs baseline" claim is unfalsifiable</td><td>A trivial agent change is blocked by each invariant when it should be (test the gates, not the demo); baseline dashboard live</td></tr>
+  <tr><td><strong>1 · Bounded agents</strong></td><td>PR review + security review on every PR · @claude triage · CI-fix proposals · <code>code-review</code> dataset live · <strong>per-feature cost model published from measured traces (r2)</strong></td><td>Acceptance rate baseline measured; zero invariant violations over 4 weeks; evals switch from report-only to enforcing as datasets reach seed threshold</td></tr>
+  <tr><td><strong>2 · Inner loop</strong></td><td>Task dispatch (§5) on scoped tasks · actor–critic rounds (cross-family critic) · spec-derived test-first flow</td><td>Agent PRs merging at/above baseline acceptance; post-merge churn ≤ human baseline; <strong>cost per accepted PR ≤ agreed threshold (r2)</strong></td></tr>
+  <tr><td><strong>3 · RDR plane</strong></td><td><em>LangGraph enters here (r2).</em> Full RDR graph + Agent Inbox gates · Postgres spine + traceability CI check · risk-tier matrix + delta path · rdr-* datasets live</td><td>Features flowing brief→tasks with both gates exercised; RTM complete for pilot features; gate latency &lt; 1 business day</td></tr>
+  <tr><td><strong>4 · Outer-loop ops</strong></td><td>Canary + rollback on agent changes · incident-investigation graph (propose-only) · production signals → annotation queues</td><td>DORA movement measured against Gate-1 baseline; flywheel demonstrably converting failures to eval cases</td></tr>
+</table>
+<p>Ongoing: forward-deployed engineering — eval calibration, budget tuning, prompt/graph evolution under the same eval gates that govern everything else.</p>
+<div class="callout"><strong>De-scope fallback (r2):</strong> every gate has a defined retreat, not just an exit. If Gate 3 stalls (PM/architect adoption is the known risk): retain Gates 0–2 permanently — bounded review agents plus the spec-driven inner loop deliver most of the measured value with no PM workflow change — and re-attempt the RDR plane per team, opt-in, rather than big-bang. If Gate 2 misses its cost threshold: shrink model tiers and critic rounds before shrinking scope. An adoption program without a retreat path converts stalls into shelfware.</div>
+
+<footer>
+  Revision r2 (Aug 2026) — incorporates the critical review: phase-gated stack entry, Postgres-first spine with warn-and-queue degradation, cross-family critics/judge, eval cold-start rule, risk-tiered gating, published cost model, EARS scoping, human-baseline capture, SDK pinning, MCP supply-chain attestation, de-scope fallback. Derived from: ai-assisted-pdlc-agent-architecture.md (V1 — evidence &amp; sources) · ai-assisted-pdlc-agent-architecture-v2-aios.md (v2-r1 — ALTi AIOS™ discipline mapping) · Claude Code / Claude Agent SDK docs · LangGraph 1.x / LangSmith docs. Code excerpts are illustrative reference implementations — validate against current SDK/API schemas at build time. Internal working brief — not client-facing without review; AIOS naming and claims follow the corporate canon.
+</footer>
+
+</div>
+</body>
+</html>

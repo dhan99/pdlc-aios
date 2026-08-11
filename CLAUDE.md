@@ -1,7 +1,7 @@
 # pdlc-aios
 
 AIOS-based AI-assisted PDLC platform. Python 3.14, uv, src layout.
-Architecture source of truth: v2 technical brief r2 (PDLC-DEV/v2-technical-brief-claude-langgraph-langsmith.html).
+Architecture source of truth: docs/architecture/v2-brief-r2.html (r2). Consult it for WHY decisions; do not load it wholesale — read the specific section you need.
 
 ## Commands
 - `make check`  - lint + typecheck + tests. Run before EVERY commit. This is the definition of green.
@@ -19,6 +19,8 @@ Architecture source of truth: v2 technical brief r2 (PDLC-DEV/v2-technical-brief
 - `scripts/hooks/`      - policy hooks. These are LAW, reviewed like code.
 - `evals/datasets/`     - golden data (not code). Protected; see "Do not touch".
 - `metrics/`            - baseline.json, cost model. Append-only; never rewrite history.
+- `docs/architecture/`  - the r2 brief and `build-plan.md`, the day-by-day plan every "Day N"
+                          above refers to. Read the section you need, not the whole file.
 
 ## IDs
 One grammar, used in spec dirs, trailers, tests, and the spine. Slugs are lowercase kebab-case.
@@ -61,11 +63,11 @@ One grammar, used in spec dirs, trailers, tests, and the spine. Slugs are lowerc
 - `.github/**` is human-owned. You may draft or edit a workflow only when I ask you to in the
   current conversation, and only on a branch — never merge it, never self-approve, never edit
   it as a side effect of some other task.
-- hook-enforced from Day2, but do not attempt even before then.
+- Hook-enforced from Day 2, but do not attempt even before then.
 - Never read or write `.env`, `*.pem`, `~/.secrets/`, `SAVE/` (repo root — holds live credentials).
 
 ## Definition of done
-`make check` green. new code has tests. docstrings on public fucntions. commit message explains WHY, trailers present. nothing in "do not touch"modified.
+`make check` green. New code has tests. Docstrings on public functions. Commit message explains WHY, trailers present. Nothing in "do not touch" modified.
 
-## When struck
+## When stuck
 Stop after 2 failed attempts at the same fix and ask, showing both attempts. Do not delete failing tests to make the suite pass. Ever.
