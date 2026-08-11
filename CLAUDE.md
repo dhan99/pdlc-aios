@@ -23,7 +23,9 @@ Architecture source of truth: v2 technical brief r2 (PDLC-DEV/v2-technical-brief
 - Every commit on agent branches carries trailers: `Implements: FEAT-x-Rn` and `Agent-Session: <id>`.
 - Type hints everywhere; mypy strict is a gate, not a suggestion.
 - No new dependencies without asking me first.
-- Branches: `agent/*` for agent work, `feat/*` for human work. Never push to main.
+- Branches: `agent/*` for agent work, `feat/*` for human work, `chore/*` for tooling and scaffolding.
+- Trailers above are required on `agent/*` only; `chore/*` predates any FEAT and carries none.
+- Never commit to or push `main`. If you are on `main`, create a branch before your first edit.
 
 ## Do not touch
 - `scripts/hooks/**`, `evals/**/`, `.github/**`, `specs/**/requirements.md` after approval
