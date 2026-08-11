@@ -1,0 +1,35 @@
+# Secrets — never commit. See CLAUDE.md "Secrets".
+SAVE/
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+
+# Tooling caches
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+
+# Environments
+.venv/
+venv/
+
+# Editor / OS
+*.swp
+*.swo
+*~
+.DS_Store
+.idea/

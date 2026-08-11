@@ -1,0 +1,25 @@
+# All hooks are local + language: system, so nothing is fetched from the network
+# and every tool version matches the project venv (and therefore `make lint`).
+repos:
+  - repo: local
+    hooks:
+      - id: ruff-check
+        name: ruff check
+        entry: uv run ruff check --fix
+        language: system
+        types_or: [python, pyi]
+
+      - id: ruff-format
+        name: ruff format
+        entry: uv run ruff format
+        language: system
+        types_or: [python, pyi]
+
+      - id: mypy
+        name: mypy (strict)
+        entry: uv run mypy
+        language: system
+        types: [python]
+        # Use the `files` setting in pyproject.toml rather than per-file args;
+        # passing filenames breaks strict-mode follow-imports.
+        pass_filenames: false
