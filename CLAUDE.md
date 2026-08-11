@@ -18,9 +18,16 @@ Architecture source of truth: v2 technical brief r2 (PDLC-DEV/v2-technical-brief
 - `specs/FEAT-*/`       - requirements.md (EARS), design.md, tasks.md per feature
 - `scripts/hooks/`      - policy hooks. These are LAW, reviewed like code.
 
+## IDs
+One grammar, used in spec dirs, trailers, tests, and the spine. Slugs are lowercase kebab-case.
+- Feature:     `FEAT-<slug>`         e.g. `FEAT-ears-validator`  (dir: `specs/FEAT-ears-validator/`)
+- Requirement: `FEAT-<slug>-R<n>`    e.g. `FEAT-ears-validator-R3`  (`n` counts from 1, never reused)
+- Test name:   lowercase the req id, hyphens to underscores, prefix `test_`, suffix the behaviour:
+  `FEAT-ears-validator-R3` -> `test_feat_ears_validator_r3_rejects_bare_shall`
+
 ## Conventions
-- Tests FIRST, always. Tests derived from EARS criteria are named `test_<req_id>_*` and are never modified after they are written.
-- Every commit on agent branches carries trailers: `Implements: FEAT-x-Rn` and `Agent-Session: <id>`.
+- Tests FIRST, always. Tests derived from EARS criteria follow the test-name rule above and are never modified after they are written.
+- Every commit on agent branches carries trailers: `Implements: FEAT-<slug>-R<n>` and `Agent-Session: <id>`.
 - Type hints everywhere; mypy strict is a gate, not a suggestion.
 - No new dependencies without asking me first.
 - Branches: `agent/*` for agent work, `feat/*` for human work, `chore/*` for tooling and scaffolding.
