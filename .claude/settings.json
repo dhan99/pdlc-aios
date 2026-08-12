@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "deny": [
+      "Read(.env)", "Read(.env.*)", "Read(**/*.pem)",
+      "Read(~/.ssh/**)", "Read(~/.secrets/**)"
+    ]
+  },
+  "env": { "LANGSMITH_PROJECT": "pdlc-aios" }
+}

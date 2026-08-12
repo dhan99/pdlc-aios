@@ -9,6 +9,7 @@ SAVE/
 
 # Python
 __pycache__/
+.pytest_cache/
 *.py[cod]
 *.egg-info/
 build/
@@ -33,3 +34,5 @@ venv/
 *~
 .DS_Store
 .idea/
+
+.claude/settings.local.json
