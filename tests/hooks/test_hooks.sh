@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Harness: pipes synthetic Claude Code payloads into each hook, asserts eit codes.
+# Harness: pipes synthetic Claude Code payloads into each hook, asserts exit codes.
 set -uo pipefail
 ROOT="$(cd "$(dirname "$0")/../.." && pwd )"
 HOOKS="$ROOT/scripts/hooks"
@@ -32,7 +32,7 @@ check "pytest allowed"        deny-danger.sh "$(mk Bash '{"command":"uv run pyte
 check "git push allowed"      deny-danger.sh "$(mk Bash '{"command":"git push origin feat/x"}')"   0
 check "grep env-var allowed"  deny-danger.sh "$(mk Bash '{"command":"grep -r ENVIRONMENT src/"}')"   0
 
-# ---- protocol-paths.sh (PreToolUse: Edit|Write) ----
+# ---- protect-paths.sh (PreToolUse: Edit|Write) ----
 check "hooks dir blocked"     protect-paths.sh "$(mk Write "{\"file_path\":\"$ROOT/scripts/hooks/evil.sh\"}")"   2
 check "workflows blocked"     protect-paths.sh "$(mk Edit "{\"file_path\":\"$ROOT/.github/workflows/test.yml\"}")"   2
 check "datasets blocked"      protect-paths.sh "$(mk Write "{\"file_path\":\"$ROOT/evals/datasets/gold.jsonl\"}")"   2
@@ -91,6 +91,18 @@ check "egress via cmd-subst blocked"   deny-danger.sh "$(mk Bash '{"command":"gi
 check "delete in --body still blocked" deny-danger.sh "$(mk Bash '{"command":"gh pr create --body \"x\" && rm -rf src"}')"   2
 check "delete via cmd-subst blocked"   deny-danger.sh "$(mk Bash '{"command":"echo \"$(rm -rf src)\""}')"   2
 check "delete via backticks blocked"   deny-danger.sh "$(mk Bash '{"command":"echo `rm -rf src`"}')"   2
+
+# ---- REGRESSION: protect-paths matches path STRINGS, not resolved paths ----
+# rel is a prefix-strip of CLAUDE_PROJECT_DIR, then matched with shell globs.
+# Anything that reaches a protected file by a different-looking string slips
+# past: the case arms never see the path the filesystem would actually open.
+# 1. Traversal landing back inside the repo. Same file as "hooks dir blocked",
+#    written a different way. Unambiguously a bypass.
+check "hooks via .. traversal blocked" protect-paths.sh "$(mk Write "{\"file_path\":\"$ROOT/tests/../scripts/hooks/evil.sh\"}")"   2
+# 2. Absolute path outside the repo. rel keeps its leading /, so no arm matches.
+#    Whether a repo hook should police the user's global config is a scope call
+#    -- but disabling hooks there defeats this repo's policy just as thoroughly.
+check "global settings blocked"        protect-paths.sh "$(mk Write "{\"file_path\":\"$HOME/.claude/settings.json\"}")"   2
 
 echo
 echo "hooks harness: $pass passed, $fail failed"
