@@ -1,0 +1,35 @@
+name: claude-review
+on:
+  pull_request: {types: [opened, synchronize ]}
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          claude_args: "--max-turns 25"
+          prompt: |
+            Review this PR diff. If the PR body or commits carry an
+            "Implements: FEAT-x-Rn" trailer, check the changes against those
+            requirement IDs in specs/. Check: correctness, security,
+            conventions per CLAUDE.md, and test adequacy (do tests genuinely
+            encode acceptance criteria?). Post findings as review comments.
+            You must NEVER approve, request changes formally, or merge - 
+            findings only. Keep comments specific and actionable.
+
+    security:
+      runs-on: ubuntu-latest
+      steps:
+        - uses: actions/checkout@v4
+        - uses: anthropics/claude-code-security-review@main
+          with:
+            claude-api-key: ${{ secrets.ANTHROPIC_API_KEY }}
+            comment-pr: true
