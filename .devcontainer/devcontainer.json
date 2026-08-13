@@ -18,7 +18,8 @@
 
   "features": {
     "ghcr.io/va-h/devcontainers-features/uv:1": {},
-    "ghcr.io/devcontainers/features/github-cli:1": {}
+    "ghcr.io/devcontainers/features/github-cli:1": {},
+    "ghcr.io/devcontainers-extra/features/jq-likes:2": {}
   },
 
   "postCreateCommand": "uv sync && uv run pre-commit install",

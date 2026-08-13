@@ -11,7 +11,7 @@ help:
 	@echo "cov        pytest with coverage report"
 	@echo "clean      remove caches and build artifacts"
 
-check: lint test
+check: lint test hooks-test
 
 test:
 	uv run pytest
