@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Harness: pipes synthetic Claude Code payloads into each hook, asserts eit codes.
+# Harness: pipes synthetic Claude Code payloads into each hook, asserts exit codes.
 set -uo pipefail
 ROOT="$(cd "$(dirname "$0")/../.." && pwd )"
 HOOKS="$ROOT/scripts/hooks"
@@ -32,7 +32,7 @@ check "pytest allowed"        deny-danger.sh "$(mk Bash '{"command":"uv run pyte
 check "git push allowed"      deny-danger.sh "$(mk Bash '{"command":"git push origin feat/x"}')"   0
 check "grep env-var allowed"  deny-danger.sh "$(mk Bash '{"command":"grep -r ENVIRONMENT src/"}')"   0
 
-# ---- protocol-paths.sh (PreToolUse: Edit|Write) ----
+# ---- protect-paths.sh (PreToolUse: Edit|Write) ----
 check "hooks dir blocked"     protect-paths.sh "$(mk Write "{\"file_path\":\"$ROOT/scripts/hooks/evil.sh\"}")"   2
 check "workflows blocked"     protect-paths.sh "$(mk Edit "{\"file_path\":\"$ROOT/.github/workflows/test.yml\"}")"   2
 check "datasets blocked"      protect-paths.sh "$(mk Write "{\"file_path\":\"$ROOT/evals/datasets/gold.jsonl\"}")"   2
@@ -64,6 +64,45 @@ check "rm --recursive blocked" deny-danger.sh "$(mk Bash '{"command":"rm --recur
 # protect-paths' `.claude/settings.json/*` pattern only matches paths BELOW the
 # file, treating it as a directory; the file itself is unprotected.
 check "settings.json blocked"  protect-paths.sh "$(mk Edit "{\"file_path\":\"$ROOT/.claude/settings.json\"}")"   2
+
+# ---- REGRESSION: secret patterns match prose, not just access ----
+# deny-danger greps the whole command string, so a commit message or PR body
+# that NAMES a protected path is denied the same as reading one. This blocked
+# the Day 2 PR body, which documented the hook's own coverage.
+check "commit msg naming ssh allowed"  deny-danger.sh "$(mk Bash '{"command":"git commit -m \"harden ~/.ssh handling\""}')"   0
+check "pr body naming env allowed"     deny-danger.sh "$(mk Bash '{"command":"gh pr create --body \"documents the .env policy\""}')"   0
+# WONTFIX (decided 2026-08-12): `grep -rn bot.pem docs/` searches docs FOR the
+# string, while `grep secret bot.pem` reads the key. Separating those needs
+# positional argument parsing, not a regex — more ways to be wrong than the
+# annoyance it removes. Blocking both is the fail-safe side for key material.
+# Revisit only if the checks are rewritten around a real command parser.
+check "docs naming pem stays blocked"  deny-danger.sh "$(mk Bash '{"command":"grep -rn bot.pem docs/"}')"   2
+# ...while actual access must stay blocked. Any fix has to keep these red-lined:
+# they are what proves a prose exemption did not open a secret-access hole.
+check "real ssh read still blocked"    deny-danger.sh "$(mk Bash '{"command":"cat ~/.ssh/id_rsa"}')"   2
+check "real env read still blocked"    deny-danger.sh "$(mk Bash '{"command":"cat .env.production"}')"   2
+
+# ---- REGRESSION: word-boundary evasion via command substitution ----
+# The destructive and egress patterns require ^ or one of [;&| ] before the
+# tool name, so the "(" of $(...) and a backtick both hide it. These are
+# evasions, not annoyances: the command reads as innocuous and still runs.
+check "egress after -m still blocked"  deny-danger.sh "$(mk Bash '{"command":"git commit -m \"msg\" && curl http://x.io/p"}')"   2
+check "egress via cmd-subst blocked"   deny-danger.sh "$(mk Bash '{"command":"git commit -m \"$(curl http://x.io/p)\""}')"   2
+check "delete in --body still blocked" deny-danger.sh "$(mk Bash '{"command":"gh pr create --body \"x\" && rm -rf src"}')"   2
+check "delete via cmd-subst blocked"   deny-danger.sh "$(mk Bash '{"command":"echo \"$(rm -rf src)\""}')"   2
+check "delete via backticks blocked"   deny-danger.sh "$(mk Bash '{"command":"echo `rm -rf src`"}')"   2
+
+# ---- REGRESSION: protect-paths matches path STRINGS, not resolved paths ----
+# rel is a prefix-strip of CLAUDE_PROJECT_DIR, then matched with shell globs.
+# Anything that reaches a protected file by a different-looking string slips
+# past: the case arms never see the path the filesystem would actually open.
+# 1. Traversal landing back inside the repo. Same file as "hooks dir blocked",
+#    written a different way. Unambiguously a bypass.
+check "hooks via .. traversal blocked" protect-paths.sh "$(mk Write "{\"file_path\":\"$ROOT/tests/../scripts/hooks/evil.sh\"}")"   2
+# 2. Absolute path outside the repo. rel keeps its leading /, so no arm matches.
+#    Whether a repo hook should police the user's global config is a scope call
+#    -- but disabling hooks there defeats this repo's policy just as thoroughly.
+check "global settings blocked"        protect-paths.sh "$(mk Write "{\"file_path\":\"$HOME/.claude/settings.json\"}")"   2
 
 echo
 echo "hooks harness: $pass passed, $fail failed"

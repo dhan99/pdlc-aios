@@ -6,6 +6,8 @@ set -euo pipefail
 payload="$(cat)"
 fp="$(printf '%s' "$payload" | jq -r '.tool_input.file_path // empty')"
 [ -z "$fp" ] && exit 0
+dir="$(dirname "$fp")"
+if real_dir="$(cd "$dir" 2>/dev/null && pwd -P)"; then fp="$real_dir/$(basename "$fp")"; fi
 rel="${fp#"$CLAUDE_PROJECT_DIR"/}"
 
 deny() { echo "BLOCKED (protect-paths): $rel - $1" >&2; exit 2; }
@@ -15,6 +17,7 @@ case "$rel" in
   .github/*) deny "CO workflows are protected; changed only by a human PR" ;;
   evals/datasets/*) deny "gold datasets are written by seed scripts after human review, never edited directly" ;;
   .claude/settings.json) deny "hook wiring is policy; changed only by a human PR" ;;
+  "$HOME"/.claude/settings.json) deny "global hook wiring is policy; changed only by a human" ;;
 esac
 
 # requirements.md is frozen once its features passed the PM gate (G1)
